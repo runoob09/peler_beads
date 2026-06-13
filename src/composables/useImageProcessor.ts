@@ -1,5 +1,5 @@
 export function resizeImage(
-  source: HTMLCanvasElement | ImageBitmap,
+  source: HTMLImageElement | HTMLCanvasElement | ImageBitmap,
   targetWidth: number,
   targetHeight: number,
   keepAspectRatio: boolean,
@@ -7,15 +7,16 @@ export function resizeImage(
   const canvas = document.createElement('canvas')
   canvas.width = targetWidth
   canvas.height = targetHeight
-  const ctx = canvas.getContext('2d')!
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return canvas
 
   if (!keepAspectRatio) {
     ctx.drawImage(source, 0, 0, targetWidth, targetHeight)
     return canvas
   }
 
-  const srcW = source instanceof HTMLCanvasElement ? source.width : source.width
-  const srcH = source instanceof HTMLCanvasElement ? source.height : source.height
+  const srcW = source.width
+  const srcH = source.height
 
   const scale = Math.max(targetWidth / srcW, targetHeight / srcH)
   const scaledW = srcW * scale

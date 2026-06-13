@@ -9,7 +9,7 @@ import { generatePdf } from './utils/exportPdf'
 import type { BeadSettings, ProjectFile } from './types'
 
 const { brandNames, palette, selectedBrand, selectBrand, addCustomColor, removeColor } = usePalette()
-const { beadGrid, settings, process } = useBeadPipeline()
+const { beadGrid, settings, process, isProcessing, error } = useBeadPipeline()
 
 const imageFile = ref<File | null>(null)
 
@@ -146,7 +146,11 @@ function onLoadProject() {
       @save-project="onSaveProject"
       @load-project="onLoadProject"
     />
-    <BeadPreview :beadGrid="beadGrid" :display="settings.display" />
+    <div class="preview-wrapper">
+      <div v-if="error" class="error-banner">{{ error }}</div>
+      <div v-if="isProcessing" class="loading-bar">处理中...</div>
+      <BeadPreview :beadGrid="beadGrid" :display="settings.display" />
+    </div>
   </div>
 </template>
 
@@ -154,6 +158,10 @@ function onLoadProject() {
 .app-layout { display: flex; height: 100vh; overflow: hidden; }
 
 #app { width: 100%; max-width: 100%; }
+
+.preview-wrapper { flex: 1; display: flex; flex-direction: column; position: relative; }
+.error-banner { background: #fee2e2; color: #dc2626; padding: 8px 16px; font-size: 13px; }
+.loading-bar { background: var(--accent-bg, rgba(170, 59, 255, 0.1)); color: var(--accent, #aa3bff); padding: 4px 16px; font-size: 12px; }
 
 /* Beautified scrollbar */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
