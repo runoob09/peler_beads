@@ -44,8 +44,8 @@ function labelShort(name: string): string {
   return name.split(/[\s_]+/)[0] ?? name
 }
 
-const ROW_H = 28
-const HEADER_H = 34
+const ROW_H = 24
+const HEADER_H = 36
 
 function render() {
   const canvas = canvasRef.value
@@ -76,57 +76,55 @@ function render() {
   // Title
   const PAD = 12
   ctx.fillStyle = textH
-  ctx.font = '600 13px system-ui'
+  ctx.font = '600 14px system-ui'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText('色彩图例', PAD, 10)
+  ctx.fillText('色彩图例', PAD, 12)
 
   if (props.beadGrid) {
-    const total = props.beadGrid.rows * props.beadGrid.cols
     ctx.fillStyle = textCol
-    ctx.font = '11px monospace'
+    ctx.font = '12px monospace'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'top'
-    ctx.fillText(`${items.length} 色 · ${total} 珠`, W - PAD, 12)
+    ctx.fillText(`${items.length} 色`, W - PAD, 14)
   }
 
   if (items.length === 0) return
 
-  const swatchW = W - PAD * 2 - 52
+  const swatchW = W - PAD * 2 - 48
+  const swatchH = ROW_H - 8
 
   items.forEach((item, i) => {
     const y = HEADER_H + i * ROW_H
-    const swatchH = ROW_H - 8
-    const swatchY = y + 4
+    const swatchY = y + 2
 
-    // Swatch
+    // Swatch — compact
     ctx.fillStyle = item.color.hex
     ctx.beginPath()
-    ctx.roundRect(PAD, swatchY, swatchW, swatchH, 4)
+    ctx.roundRect(PAD, swatchY, swatchW, swatchH, 3)
     ctx.fill()
 
-    // Subtle inner border
     ctx.strokeStyle = 'rgba(0,0,0,0.08)'
     ctx.lineWidth = 0.5
     ctx.beginPath()
-    ctx.roundRect(PAD, swatchY, swatchW, swatchH, 4)
+    ctx.roundRect(PAD, swatchY, swatchW, swatchH, 3)
     ctx.stroke()
 
-    // Label on swatch — centered, larger
+    // Label — larger, bold
     ctx.fillStyle = textColor(item.color.hex)
     ctx.font = '600 10px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(labelShort(item.color.name), PAD + swatchW / 2, swatchY + swatchH / 2)
 
-    // Count — right side, bold
+    // Count — right, bold
     ctx.fillStyle = textH
     ctx.font = '700 12px monospace'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
-    ctx.fillText(String(item.count), W - PAD - 22, swatchY + swatchH / 2)
+    ctx.fillText(String(item.count), W - PAD - 18, swatchY + swatchH / 2)
 
-    // Pct — right side, subtle
+    // Pct — right, subtle
     ctx.fillStyle = textCol
     ctx.font = '10px monospace'
     ctx.textAlign = 'right'
@@ -146,10 +144,13 @@ function onDragStart(e: MouseEvent) {
   document.body.style.userSelect = 'none'
 }
 
+let rafId = 0
 function onDragMove(e: MouseEvent) {
   if (!dragging.value) return
   const delta = dragStartX.value - e.clientX
   panelWidth.value = Math.min(MAX_W, Math.max(MIN_W, dragStartW.value + delta))
+  cancelAnimationFrame(rafId)
+  rafId = requestAnimationFrame(render)
 }
 
 function onDragEnd() {
@@ -158,6 +159,7 @@ function onDragEnd() {
   document.removeEventListener('mouseup', onDragEnd)
   document.body.style.cursor = ''
   document.body.style.userSelect = ''
+  cancelAnimationFrame(rafId)
 }
 
 let observer: ResizeObserver | null = null

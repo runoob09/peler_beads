@@ -59,6 +59,10 @@ function onMouseMove(event: MouseEvent) {
   }
 }
 
+function onMouseLeave() {
+  hoveredCell.value = null
+}
+
 function onClick() {
   if (!props.beadGrid || !hoveredCell.value) return
   const { row, col } = hoveredCell.value
@@ -101,7 +105,7 @@ watch(() => [props.beadGrid, props.display], () => { nextTick(render) }, { deep:
     </template>
     <template v-if="beadGrid">
       <div class="preview-canvas-wrap" style="position:relative">
-        <canvas ref="canvasRef" @mousemove="onMouseMove" @click="onClick" />
+        <canvas ref="canvasRef" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @click="onClick" />
         <div v-if="hoveredColor" class="tooltip" :style="{ left: ((hoveredCell?.col ?? 0) * cellSize + cellSize) + 'px', top: ((hoveredCell?.row ?? 0) * cellSize) + 'px' }">
           {{ hoveredColor.name || hoveredColor.hex }}
         </div>
