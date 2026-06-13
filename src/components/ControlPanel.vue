@@ -76,7 +76,7 @@ const emit = defineEmits<{
 
 <style scoped>
 .control-panel {
-  width: 320px; flex-shrink: 0; padding: 20px;
+  width: 280px; flex-shrink: 0; padding: 20px;
   border-right: 1px solid var(--border);
   overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
   max-height: 100vh; box-sizing: border-box;

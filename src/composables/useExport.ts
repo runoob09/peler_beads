@@ -129,7 +129,7 @@ function getColorLabel(color: PaletteColor): string {
   return parts[0] ?? color.hex
 }
 
-function countColorUsage(grid: BeadGrid): Map<number, number> {
+export function countColorUsage(grid: BeadGrid): Map<number, number> {
   const counts = new Map<number, number>()
   for (const row of grid.cells) {
     for (const cell of row) {

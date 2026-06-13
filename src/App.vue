@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue'
 import ControlPanel from './components/ControlPanel.vue'
 import BeadPreview from './components/BeadPreview.vue'
+import ColorLegend from './components/ColorLegend.vue'
 import { usePalette } from './composables/usePalette'
 import { useBeadPipeline } from './composables/useBeadPipeline'
 import { exportPNG, downloadBlob } from './composables/useExport'
@@ -150,6 +151,7 @@ function onLoadProject() {
       <div v-if="error" class="error-banner">{{ error }}</div>
       <BeadPreview :beadGrid="beadGrid" :display="settings.display" :progress="progress" />
     </div>
+    <ColorLegend :beadGrid="beadGrid" />
   </div>
 </template>
 
