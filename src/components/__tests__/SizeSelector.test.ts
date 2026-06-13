@@ -17,7 +17,7 @@ describe('SizeSelector', () => {
     })
     const btn = wrapper.findAll('button').find(b => b.text().includes('50×50'))
     await btn!.trigger('click')
-    const emitted = wrapper.emitted('update:modelValue')!
+    const emitted = wrapper.emitted('update:modelValue')! as any
     expect(emitted[0][0].cols).toBe(50)
     expect(emitted[0][0].rows).toBe(50)
   })

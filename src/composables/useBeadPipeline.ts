@@ -42,7 +42,7 @@ export function useBeadPipeline() {
       const s = { ...settings.value, ...overrideSettings }
 
       const img = await loadImageFromFile(imageFile)
-      const resized = resizeImage(img, s.gridCols, s.gridRows, s.keepAspectRatio)
+      const resized = resizeImage(img as unknown as HTMLCanvasElement, s.gridCols, s.gridRows, s.keepAspectRatio)
       const ctx = resized.getContext('2d')!
       let imageData = ctx.getImageData(0, 0, s.gridCols, s.gridRows)
 

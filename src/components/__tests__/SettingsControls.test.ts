@@ -18,7 +18,7 @@ describe('ColorAdjustments', () => {
     const wrapper = mount(ColorAdjustments, { props: { modelValue: settings } })
     const r = wrapper.findAll('input[type="range"]')[0]
     await r.setValue(50)
-    const emitted = wrapper.emitted('update:modelValue')!
+    const emitted = wrapper.emitted('update:modelValue')! as any
     expect(emitted[0][0].brightness).toBe(50)
   })
 })

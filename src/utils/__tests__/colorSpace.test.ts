@@ -45,7 +45,7 @@ describe('rgbToLab', () => {
   })
 
   it('returns values for pure red', () => {
-    const [L1, a1, b1] = rgbToLab(255, 0, 0)
+    const [L1, a1] = rgbToLab(255, 0, 0)
     expect(L1).toBeGreaterThan(40)
     expect(a1).toBeGreaterThan(0)
   })

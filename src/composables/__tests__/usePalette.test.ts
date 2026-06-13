@@ -38,7 +38,7 @@ vi.mock('../../data/palettes', () => {
   }
   return {
     BRAND_NAMES: Object.keys(brandData).sort(),
-    getBrandColors: (name: string) => brandData[name] ?? [],
+    getBrandColors: (name: string) => (brandData as any)[name] ?? [],
   }
 })
 

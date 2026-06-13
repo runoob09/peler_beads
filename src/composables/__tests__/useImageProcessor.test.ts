@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { applyAdjustments } from '../useImageProcessor'
 
-function makeImageData(data: Uint8ClampedArray, width: number, height: number): ImageData {
-  return { data, width, height, colorSpace: 'srgb' as PredefinedColorSpace }
+function makeImageData(data: Uint8ClampedArray<ArrayBuffer>, width: number, height: number): ImageData {
+  return { data: data as any, width, height, colorSpace: 'srgb' as PredefinedColorSpace }
 }
 
 describe('applyAdjustments', () => {
