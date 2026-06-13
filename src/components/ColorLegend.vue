@@ -53,7 +53,8 @@ function render() {
   if (!canvas) return
 
   const dpr = window.devicePixelRatio || 1
-  const W = canvas.clientWidth
+  const containerW = containerRef.value?.clientWidth ?? panelWidth.value
+  const W = containerW
   const H = HEADER_H + items.length * ROW_H + 10
 
   canvas.width = W * dpr
