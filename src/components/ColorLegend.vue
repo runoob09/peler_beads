@@ -9,7 +9,7 @@ const containerRef = ref<HTMLDivElement>()
 
 const panelWidth = ref(170)
 const MIN_W = 140
-const MAX_W = 360
+const MAX_W = 440
 const dragging = ref(false)
 const dragStartX = ref(0)
 const dragStartW = ref(0)
@@ -45,12 +45,11 @@ function labelShort(name: string): string {
 }
 
 // Layout constants
-const SWATCH_W = 40       // fixed swatch width
-const ROW_H = 22           // row height per item
+const SWATCH_W = 60       // fixed swatch width
+const ITEM_MAX_W = 100    // max total item width (swatch + text area)
+const ROW_H = 36           // row height per item
 const HEADER_H = 34        // title + summary height
 const PAD = 10             // horizontal padding
-const ITEM_GAP = 6         // gap between columns
-const TEXT_W = 40          // space for count + pct
 
 function render() {
   const canvas = canvasRef.value
@@ -62,8 +61,7 @@ function render() {
 
   // Calculate columns based on available width
   const availW = W - PAD * 2
-  const perItemW = SWATCH_W + ITEM_GAP + TEXT_W
-  const cols = Math.max(1, Math.floor(availW / perItemW))
+  const cols = Math.max(1, Math.floor(availW / ITEM_MAX_W))
   const colW = Math.floor(availW / cols)
   const rows = Math.ceil(items.length / cols)
 
@@ -98,7 +96,7 @@ function render() {
     ctx.font = '11px monospace'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'top'
-    ctx.fillText(`${items.length} 色 · ${cols} 列`, W - PAD, 12)
+    ctx.fillText(`${items.length} 色`, W - PAD, 12)
   }
 
   if (items.length === 0) return
@@ -115,38 +113,38 @@ function render() {
     const cy = HEADER_H + row * ROW_H
     const midY = cy + ROW_H / 2
 
-    // Swatch — fixed 40px
+    // Swatch — fixed 60px, height ROW_H-6
     ctx.fillStyle = item.color.hex
     ctx.beginPath()
-    ctx.roundRect(cx, cy + 2, SWATCH_W, swatchH, 3)
+    ctx.roundRect(cx, cy + 3, SWATCH_W, swatchH, 4)
     ctx.fill()
 
     ctx.strokeStyle = 'rgba(0,0,0,0.08)'
     ctx.lineWidth = 0.5
     ctx.beginPath()
-    ctx.roundRect(cx, cy + 2, SWATCH_W, swatchH, 3)
+    ctx.roundRect(cx, cy + 3, SWATCH_W, swatchH, 4)
     ctx.stroke()
 
-    // Label on swatch
+    // Label on swatch — 20px bold
     ctx.fillStyle = textColor(item.color.hex)
-    ctx.font = '600 9px monospace'
+    ctx.font = 'bold 20px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(labelShort(item.color.name), cx + SWATCH_W / 2, cy + 2 + swatchH / 2)
+    ctx.fillText(labelShort(item.color.name), cx + SWATCH_W / 2, cy + 3 + swatchH / 2)
 
     // Count
     ctx.fillStyle = textH
     ctx.font = '700 11px monospace'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(String(item.count), cx + countX, midY - 1)
+    ctx.fillText(String(item.count), cx + countX, midY - 3)
 
     // Pct
     ctx.fillStyle = textCol
     ctx.font = '9px monospace'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`${item.pct}%`, cx + countX, midY + 9)
+    ctx.fillText(`${item.pct}%`, cx + countX, midY + 10)
   }
 }
 
