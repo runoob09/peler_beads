@@ -199,7 +199,6 @@ watch([sortedColors, panelWidth], () => { nextTick(render) }, { deep: true })
 <template>
   <aside
     v-if="beadGrid"
-    ref="containerRef"
     class="color-legend"
     :style="{ width: panelWidth + 'px' }"
     :class="{ dragging }"
@@ -207,18 +206,24 @@ watch([sortedColors, panelWidth], () => { nextTick(render) }, { deep: true })
     <div class="drag-handle" @mousedown="onDragStart">
       <span class="drag-grip"></span>
     </div>
-    <canvas ref="canvasRef" class="legend-canvas" />
+    <div ref="containerRef" class="legend-scroll">
+      <canvas ref="canvasRef" class="legend-canvas" />
+    </div>
   </aside>
 </template>
 
 <style scoped>
 .color-legend {
-  flex-shrink: 0; padding: 12px 0; position: relative;
+  flex-shrink: 0; position: relative;
   border-left: 1px solid var(--border, #e5e4e7);
-  overflow-y: auto; max-height: 100vh; box-sizing: border-box;
+  overflow: visible; max-height: 100vh; box-sizing: border-box;
   background: color-mix(in srgb, var(--bg, #fff) 97%, var(--text, #6b6375));
 }
 .color-legend.dragging { transition: none; }
+.legend-scroll {
+  overflow-y: auto; max-height: 100vh; padding: 12px 0;
+  box-sizing: border-box;
+}
 .legend-canvas { display: block; width: 100%; }
 .drag-handle {
   position: absolute; left: -3px; top: 0; bottom: 0; width: 7px;
