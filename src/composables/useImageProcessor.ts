@@ -1,0 +1,86 @@
+export function resizeImage(
+  source: HTMLCanvasElement | ImageBitmap,
+  targetWidth: number,
+  targetHeight: number,
+  keepAspectRatio: boolean,
+): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = targetWidth
+  canvas.height = targetHeight
+  const ctx = canvas.getContext('2d')!
+
+  if (!keepAspectRatio) {
+    ctx.drawImage(source, 0, 0, targetWidth, targetHeight)
+    return canvas
+  }
+
+  const srcW = source instanceof HTMLCanvasElement ? source.width : source.width
+  const srcH = source instanceof HTMLCanvasElement ? source.height : source.height
+
+  const scale = Math.max(targetWidth / srcW, targetHeight / srcH)
+  const scaledW = srcW * scale
+  const scaledH = srcH * scale
+  const offsetX = (targetWidth - scaledW) / 2
+  const offsetY = (targetHeight - scaledH) / 2
+
+  ctx.drawImage(source, offsetX, offsetY, scaledW, scaledH)
+  return canvas
+}
+
+export async function loadImageFromFile(file: File): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = URL.createObjectURL(file)
+  })
+}
+
+export function applyAdjustments(
+  imageData: ImageData,
+  brightness: number,
+  contrast: number,
+  saturation: number,
+): ImageData {
+  const data = new Uint8ClampedArray(imageData.data)
+  const result = new ImageData(imageData.width, imageData.height)
+
+  const bFactor = brightness / 100
+  const cFactor = (contrast + 100) / 100
+  const sFactor = (saturation + 100) / 100
+
+  for (let i = 0; i < data.length; i += 4) {
+    let r = data[i]
+    let g = data[i + 1]
+    let b = data[i + 2]
+
+    // Brightness
+    if (brightness > 0) {
+      r = r + (255 - r) * bFactor
+      g = g + (255 - g) * bFactor
+      b = b + (255 - b) * bFactor
+    } else if (brightness < 0) {
+      r = r * (1 + bFactor)
+      g = g * (1 + bFactor)
+      b = b * (1 + bFactor)
+    }
+
+    // Contrast
+    r = (r - 128) * cFactor + 128
+    g = (g - 128) * cFactor + 128
+    b = (b - 128) * cFactor + 128
+
+    // Saturation
+    const gray = 0.299 * r + 0.587 * g + 0.114 * b
+    r = gray + (r - gray) * sFactor
+    g = gray + (g - gray) * sFactor
+    b = gray + (b - gray) * sFactor
+
+    result.data[i] = Math.max(0, Math.min(255, Math.round(r)))
+    result.data[i + 1] = Math.max(0, Math.min(255, Math.round(g)))
+    result.data[i + 2] = Math.max(0, Math.min(255, Math.round(b)))
+    result.data[i + 3] = data[i + 3]
+  }
+
+  return result
+}
