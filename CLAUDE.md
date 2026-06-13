@@ -13,6 +13,8 @@ npm run test:watch # Run tests in watch mode
 ```
 ## Workflow
 
+**每项功能必须编写测试用例**，先写测试（TDD：test → fail → implement → pass），测试文件放在对应 `__tests__/` 目录下。
+
 **每次功能修改完成后必须 git commit**，提交信息使用 conventional commits 格式：
 
 ```bash
