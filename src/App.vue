@@ -152,4 +152,15 @@ function onLoadProject() {
 
 <style>
 .app-layout { display: flex; height: 100vh; overflow: hidden; }
+
+#app { width: 100%; max-width: 100%; }
+
+/* Beautified scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border, #d4d4d8); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text, #9ca3af); }
+
+/* Firefox */
+* { scrollbar-width: thin; scrollbar-color: var(--border, #d4d4d8) transparent; }
 </style>
