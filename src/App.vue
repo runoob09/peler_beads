@@ -71,7 +71,7 @@ async function onExportPdf() {
     20,
     `拼豆图案 ${beadGrid.value.cols}×${beadGrid.value.rows}`,
   )
-  downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), 'perler-beads.pdf')
+  downloadBlob(new Blob([pdfBytes as any], { type: 'application/pdf' }), 'perler-beads.pdf')
 }
 
 function onSaveProject(includeImage: boolean) {
