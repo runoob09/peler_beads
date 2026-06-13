@@ -7,28 +7,31 @@ function makeGrid(colors: PaletteColor[], cells: { row: number; col: number; col
   return { rows: cells.length, cols: cells[0]?.length ?? 0, palette: colors, cells }
 }
 
-describe('ColorLegend', () => {
-  const palette: PaletteColor[] = [
-    { id: 'a', name: 'A01 White', hex: '#FFFFFF', brand: 'test' },
-    { id: 'b', name: 'B01 Black', hex: '#000000', brand: 'test' },
-    { id: 'c', name: 'C01 Red', hex: '#FF0000', brand: 'test' },
-  ]
+const palette: PaletteColor[] = [
+  { id: 'a', name: 'A01 White', hex: '#FFFFFF', brand: 'test' },
+  { id: 'b', name: 'B01 Black', hex: '#000000', brand: 'test' },
+]
 
-  it('shows empty state when no grid', () => {
+describe('ColorLegend', () => {
+  it('does not render when beadGrid is null', () => {
     const wrapper = mount(ColorLegend, { props: { beadGrid: null } })
-    expect(wrapper.text()).toContain('上传图片后将显示颜色统计')
+    expect(wrapper.find('aside').exists()).toBe(false)
   })
 
-  it('renders canvas when grid provided', () => {
+  it('renders when beadGrid is provided', () => {
     const grid = makeGrid(palette, [
       [{ row: 0, col: 0, colorIndex: 0 }],
     ])
     const wrapper = mount(ColorLegend, { props: { beadGrid: grid } })
+    expect(wrapper.find('aside').exists()).toBe(true)
     expect(wrapper.find('canvas').exists()).toBe(true)
   })
 
-  it('hides canvas when grid is null', () => {
-    const wrapper = mount(ColorLegend, { props: { beadGrid: null } })
-    expect(wrapper.find('canvas').exists()).toBe(false)
+  it('shows drag handle', () => {
+    const grid = makeGrid(palette, [
+      [{ row: 0, col: 0, colorIndex: 0 }],
+    ])
+    const wrapper = mount(ColorLegend, { props: { beadGrid: grid } })
+    expect(wrapper.find('.drag-handle').exists()).toBe(true)
   })
 })
