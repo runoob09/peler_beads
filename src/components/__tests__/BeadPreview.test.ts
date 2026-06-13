@@ -25,17 +25,17 @@ const display = {
 
 describe('BeadPreview', () => {
   it('renders canvas element when grid is provided', () => {
-    const wrapper = mount(BeadPreview, { props: { beadGrid: makeTestGrid(), display } })
+    const wrapper = mount(BeadPreview, { props: { beadGrid: makeTestGrid(), display, progress: 0 } })
     expect(wrapper.find('canvas').exists()).toBe(true)
   })
 
   it('shows empty state when no grid', () => {
-    const wrapper = mount(BeadPreview, { props: { beadGrid: null, display } })
+    const wrapper = mount(BeadPreview, { props: { beadGrid: null, display, progress: 0 } })
     expect(wrapper.text()).toContain('上传图片开始')
   })
 
   it('shows grid dimension info', () => {
-    const wrapper = mount(BeadPreview, { props: { beadGrid: makeTestGrid(), display } })
+    const wrapper = mount(BeadPreview, { props: { beadGrid: makeTestGrid(), display, progress: 0 } })
     expect(wrapper.text()).toContain('2 × 2')
   })
 })

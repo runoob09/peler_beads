@@ -9,7 +9,7 @@ import { generatePdf } from './utils/exportPdf'
 import type { BeadSettings, ProjectFile } from './types'
 
 const { brandNames, palette, selectedBrand, selectBrand, addCustomColor, removeColor } = usePalette()
-const { beadGrid, settings, process, isProcessing, error } = useBeadPipeline()
+const { beadGrid, settings, process, progress, error } = useBeadPipeline()
 
 const imageFile = ref<File | null>(null)
 
@@ -148,8 +148,7 @@ function onLoadProject() {
     />
     <div class="preview-wrapper">
       <div v-if="error" class="error-banner">{{ error }}</div>
-      <div v-if="isProcessing" class="loading-bar">处理中...</div>
-      <BeadPreview :beadGrid="beadGrid" :display="settings.display" />
+      <BeadPreview :beadGrid="beadGrid" :display="settings.display" :progress="progress" />
     </div>
   </div>
 </template>

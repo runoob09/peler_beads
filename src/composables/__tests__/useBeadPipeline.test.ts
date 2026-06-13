@@ -26,9 +26,9 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
 
 describe('useBeadPipeline', () => {
   it('initializes with null beadGrid', () => {
-    const { beadGrid, isProcessing } = useBeadPipeline()
+    const { beadGrid, progress } = useBeadPipeline()
     expect(beadGrid.value).toBeNull()
-    expect(isProcessing.value).toBe(false)
+    expect(progress.value).toBe(0)
   })
 
   it('does not process without image', async () => {

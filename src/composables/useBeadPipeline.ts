@@ -5,7 +5,7 @@ import { applyDithering } from './useDither'
 
 export function useBeadPipeline() {
   const beadGrid = ref<BeadGrid | null>(null)
-  const isProcessing = ref(false)
+  const progress = ref(0) // 0 = idle, 1–100 = processing
   const error = ref<string | null>(null)
 
   const settings = ref<BeadSettings>({
@@ -36,18 +36,23 @@ export function useBeadPipeline() {
       return
     }
 
-    isProcessing.value = true
+    progress.value = 10
     error.value = null
 
     try {
       const s = { ...settings.value, ...overrideSettings }
 
       const img = await loadImageFromFile(imageFile)
+      progress.value = 30
+
       const resized = resizeImage(img, s.gridCols, s.gridRows, s.keepAspectRatio)
+      progress.value = 50
+
       const ctx = resized.getContext('2d')
       if (!ctx) {
         error.value = 'Canvas 上下文不可用'
         beadGrid.value = null
+        progress.value = 0
         return
       }
       let imageData = ctx.getImageData(0, 0, s.gridCols, s.gridRows)
@@ -58,25 +63,34 @@ export function useBeadPipeline() {
         s.adjustments.contrast,
         s.adjustments.saturation,
       )
+      progress.value = 70
 
       // Cartoon mode: posterize before dithering for flat color bands
       if (s.colorMapping === 'cartoon') {
         imageData = posterize(imageData)
       }
+      progress.value = 80
 
       const grid = applyDithering(imageData, palette, s.dithering.algorithm, s.dithering.strength)
+      progress.value = 95
+
       beadGrid.value = grid
+      progress.value = 100
     } catch (e) {
       error.value = e instanceof Error ? e.message : '处理图片时出错'
       beadGrid.value = null
+      progress.value = 0
     } finally {
-      isProcessing.value = false
+      // briefly show 100% then reset
+      if (progress.value === 100) {
+        setTimeout(() => { progress.value = 0 }, 400)
+      }
     }
   }
 
   return {
     beadGrid,
-    isProcessing,
+    progress,
     error,
     settings,
     process,
