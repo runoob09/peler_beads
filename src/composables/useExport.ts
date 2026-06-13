@@ -39,7 +39,8 @@ export function renderGridToCanvas(
   const canvas = document.createElement('canvas')
   canvas.width = width
   canvas.height = height
-  const ctx = canvas.getContext('2d')!
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return canvas
   ctx.scale(scale, scale)
 
   const symbolMap = renderMode !== 'color' ? buildSymbolMap(grid.palette) : null
