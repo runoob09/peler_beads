@@ -9,7 +9,7 @@ const containerRef = ref<HTMLDivElement>()
 
 const panelWidth = ref(170)
 const MIN_W = 140
-const MAX_W = 280
+const MAX_W = 360
 const dragging = ref(false)
 const dragStartX = ref(0)
 const dragStartW = ref(0)
@@ -44,8 +44,13 @@ function labelShort(name: string): string {
   return name.split(/[\s_]+/)[0] ?? name
 }
 
-const ROW_H = 24
-const HEADER_H = 36
+// Layout constants
+const SWATCH_W = 40       // fixed swatch width
+const ROW_H = 22           // row height per item
+const HEADER_H = 34        // title + summary height
+const PAD = 10             // horizontal padding
+const ITEM_GAP = 6         // gap between columns
+const TEXT_W = 40          // space for count + pct
 
 function render() {
   const canvas = canvasRef.value
@@ -53,9 +58,16 @@ function render() {
   if (!canvas) return
 
   const dpr = window.devicePixelRatio || 1
-  const containerW = containerRef.value?.clientWidth ?? panelWidth.value
-  const W = containerW
-  const H = HEADER_H + items.length * ROW_H + 10
+  const W = containerRef.value?.clientWidth ?? panelWidth.value
+
+  // Calculate columns based on available width
+  const availW = W - PAD * 2
+  const perItemW = SWATCH_W + ITEM_GAP + TEXT_W
+  const cols = Math.max(1, Math.floor(availW / perItemW))
+  const colW = Math.floor(availW / cols)
+  const rows = Math.ceil(items.length / cols)
+
+  const H = HEADER_H + rows * ROW_H + 10
 
   canvas.width = W * dpr
   canvas.height = H * dpr
@@ -75,63 +87,67 @@ function render() {
   ctx.fillRect(0, 0, W, H)
 
   // Title
-  const PAD = 12
   ctx.fillStyle = textH
-  ctx.font = '600 14px system-ui'
+  ctx.font = '600 13px system-ui'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText('色彩图例', PAD, 12)
+  ctx.fillText('色彩图例', PAD, 10)
 
   if (props.beadGrid) {
     ctx.fillStyle = textCol
-    ctx.font = '12px monospace'
+    ctx.font = '11px monospace'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'top'
-    ctx.fillText(`${items.length} 色`, W - PAD, 14)
+    ctx.fillText(`${items.length} 色 · ${cols} 列`, W - PAD, 12)
   }
 
   if (items.length === 0) return
 
-  const swatchW = W - PAD * 2 - 48
-  const swatchH = ROW_H - 8
+  const swatchH = ROW_H - 6
+  const countX = SWATCH_W + 4  // count offset within item
 
-  items.forEach((item, i) => {
-    const y = HEADER_H + i * ROW_H
-    const swatchY = y + 2
+  for (let i = 0; i < items.length; i++) {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const item = items[i]
 
-    // Swatch — compact
+    const cx = PAD + col * colW
+    const cy = HEADER_H + row * ROW_H
+    const midY = cy + ROW_H / 2
+
+    // Swatch — fixed 40px
     ctx.fillStyle = item.color.hex
     ctx.beginPath()
-    ctx.roundRect(PAD, swatchY, swatchW, swatchH, 3)
+    ctx.roundRect(cx, cy + 2, SWATCH_W, swatchH, 3)
     ctx.fill()
 
     ctx.strokeStyle = 'rgba(0,0,0,0.08)'
     ctx.lineWidth = 0.5
     ctx.beginPath()
-    ctx.roundRect(PAD, swatchY, swatchW, swatchH, 3)
+    ctx.roundRect(cx, cy + 2, SWATCH_W, swatchH, 3)
     ctx.stroke()
 
-    // Label — larger, bold
+    // Label on swatch
     ctx.fillStyle = textColor(item.color.hex)
-    ctx.font = '600 10px monospace'
+    ctx.font = '600 9px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(labelShort(item.color.name), PAD + swatchW / 2, swatchY + swatchH / 2)
+    ctx.fillText(labelShort(item.color.name), cx + SWATCH_W / 2, cy + 2 + swatchH / 2)
 
-    // Count — right, bold
+    // Count
     ctx.fillStyle = textH
-    ctx.font = '700 12px monospace'
-    ctx.textAlign = 'right'
+    ctx.font = '700 11px monospace'
+    ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(String(item.count), W - PAD - 18, swatchY + swatchH / 2)
+    ctx.fillText(String(item.count), cx + countX, midY - 1)
 
-    // Pct — right, subtle
+    // Pct
     ctx.fillStyle = textCol
-    ctx.font = '10px monospace'
-    ctx.textAlign = 'right'
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`${item.pct}%`, W - PAD, swatchY + swatchH / 2)
-  })
+    ctx.fillText(`${item.pct}%`, cx + countX, midY + 9)
+  }
 }
 
 // --- Drag resize ---
