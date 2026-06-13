@@ -5,6 +5,7 @@ import BeadPreview from './components/BeadPreview.vue'
 import { usePalette } from './composables/usePalette'
 import { useBeadPipeline } from './composables/useBeadPipeline'
 import { exportPNG, downloadBlob } from './composables/useExport'
+import { generatePdf } from './utils/exportPdf'
 import type { BeadSettings, ProjectFile } from './types'
 
 const { brandNames, palette, selectedBrand, selectBrand, addCustomColor, removeColor } = usePalette()
@@ -55,8 +56,22 @@ async function onExportPng() {
   downloadBlob(blob, 'perler-beads.png')
 }
 
-function onExportPdf() {
-  alert('PDF 导出功能待实现')
+async function onExportPdf() {
+  if (!beadGrid.value) return
+  const pdfBytes = await generatePdf(
+    beadGrid.value,
+    {
+      showGrid: settings.value.display.showGrid,
+      gridLineColor: settings.value.display.gridLineColor,
+      gridLineWidth: settings.value.display.gridLineWidth,
+      boldGridInterval: settings.value.display.boldGridInterval,
+      boldGridColor: settings.value.display.boldGridColor,
+      boldGridWidth: settings.value.display.boldGridWidth,
+    },
+    20,
+    `拼豆图案 ${beadGrid.value.cols}×${beadGrid.value.rows}`,
+  )
+  downloadBlob(new Blob([pdfBytes], { type: 'application/pdf' }), 'perler-beads.pdf')
 }
 
 function onSaveProject(includeImage: boolean) {
