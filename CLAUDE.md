@@ -8,7 +8,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 npm run dev       # Start dev server with HMR
 npm run build     # Type-check (vue-tsc) then production build (vite build)
 npm run preview   # Preview production build locally
+npm run test      # Run all tests (vitest run)
+npm run test:watch # Run tests in watch mode
 ```
+## Workflow
+
+**每次功能修改完成后必须 git commit**，提交信息使用 conventional commits 格式：
+
+```bash
+git add -A
+git commit -m "feat/fix/chore: <简短描述>"
+```
+
+提交前确保 `npm run test` 通过且 `npx vue-tsc -b` 无类型错误。
 
 ## Architecture
 
