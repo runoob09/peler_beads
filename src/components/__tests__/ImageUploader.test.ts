@@ -23,12 +23,13 @@ describe('ImageUploader', () => {
     expect(wrapper.emitted('upload')![0][0]).toBe(file)
   })
 
-  it('shows file name after upload', async () => {
+  it('shows checkmark after upload instead of file name', async () => {
     const wrapper = mount(ImageUploader)
     const file = new File(['dummy'], 'test.png', { type: 'image/png' })
     const input = wrapper.find('input[type="file"]')
     Object.defineProperty(input.element, 'files', { value: [file] })
     await input.trigger('change')
-    expect(wrapper.text()).toContain('test.png')
+    expect(wrapper.text()).toContain('✓ 已上传')
+    expect(wrapper.text()).not.toContain('test.png')
   })
 })

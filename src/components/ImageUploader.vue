@@ -5,14 +5,14 @@ const emit = defineEmits<{
   upload: [file: File]
 }>()
 
-const fileName = ref<string>('')
+const hasFile = ref(false)
 const fileInput = ref<HTMLInputElement>()
 
 function onFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (file) {
-    fileName.value = file.name
+    hasFile.value = true
     emit('upload', file)
   }
 }
@@ -21,7 +21,7 @@ function onDrop(event: DragEvent) {
   event.preventDefault()
   const file = event.dataTransfer?.files?.[0]
   if (file) {
-    fileName.value = file.name
+    hasFile.value = true
     emit('upload', file)
   }
 }
@@ -38,7 +38,7 @@ function triggerUpload() {
 <template>
   <div
     class="upload-area"
-    :class="{ 'has-file': !!fileName }"
+    :class="{ 'has-file': hasFile }"
     @click="triggerUpload"
     @drop="onDrop"
     @dragover="onDragOver"
@@ -50,7 +50,7 @@ function triggerUpload() {
       class="file-input"
       @change="onFileChange"
     />
-    <span v-if="fileName" class="file-name">{{ fileName }}</span>
+    <span v-if="hasFile" class="check">✓ 已上传</span>
     <span v-else class="placeholder">拖拽或点击上传图片</span>
   </div>
 </template>
@@ -70,12 +70,13 @@ function triggerUpload() {
 .upload-area.has-file {
   border-style: solid;
   border-color: var(--accent, #aa3bff);
+  background: var(--accent-bg, rgba(170, 59, 255, 0.1));
 }
 .file-input {
   display: none;
 }
-.file-name {
-  color: var(--text-h, #08060d);
+.check {
+  color: var(--accent, #aa3bff);
   font-weight: 500;
 }
 .placeholder {
