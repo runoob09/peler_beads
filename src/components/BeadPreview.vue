@@ -84,7 +84,7 @@ const stageLabel = computed(() => {
 })
 
 onMounted(() => { nextTick(render) })
-watch(() => [props.beadGrid, props.display], render, { deep: true })
+watch(() => [props.beadGrid, props.display], () => { nextTick(render) }, { deep: true })
 </script>
 
 <template>
