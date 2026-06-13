@@ -21,16 +21,17 @@ export interface BeadGrid {
 
 export type DitherAlgorithm = 'none' | 'floydSteinberg' | 'atkinson'
 export type RenderMode = 'color' | 'symbol' | 'mixed'
+export type ColorMappingMode = 'average' | 'cartoon'
 
 export interface DitherSettings {
   algorithm: DitherAlgorithm
-  strength: number  // 0–100
+  strength: number
 }
 
 export interface AdjustmentSettings {
-  brightness: number   // -100 ~ 100
-  contrast: number     // -100 ~ 100
-  saturation: number   // -100 ~ 100
+  brightness: number
+  contrast: number
+  saturation: number
 }
 
 export interface DisplaySettings {
@@ -47,6 +48,7 @@ export interface BeadSettings {
   gridCols: number
   gridRows: number
   keepAspectRatio: boolean
+  colorMapping: ColorMappingMode
   dithering: DitherSettings
   adjustments: AdjustmentSettings
   display: DisplaySettings

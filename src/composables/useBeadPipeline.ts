@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { BeadGrid, BeadSettings, PaletteColor } from '../types'
-import { loadImageFromFile, resizeImage, applyAdjustments } from './useImageProcessor'
+import { loadImageFromFile, resizeImage, applyAdjustments, posterize } from './useImageProcessor'
 import { applyDithering } from './useDither'
 
 export function useBeadPipeline() {
@@ -12,6 +12,7 @@ export function useBeadPipeline() {
     gridCols: 29,
     gridRows: 29,
     keepAspectRatio: true,
+    colorMapping: 'average',
     dithering: { algorithm: 'none', strength: 0 },
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
@@ -57,6 +58,11 @@ export function useBeadPipeline() {
         s.adjustments.contrast,
         s.adjustments.saturation,
       )
+
+      // Cartoon mode: posterize before dithering for flat color bands
+      if (s.colorMapping === 'cartoon') {
+        imageData = posterize(imageData)
+      }
 
       const grid = applyDithering(imageData, palette, s.dithering.algorithm, s.dithering.strength)
       beadGrid.value = grid

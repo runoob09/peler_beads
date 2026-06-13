@@ -8,6 +8,7 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
     gridCols: 10,
     gridRows: 10,
     keepAspectRatio: true,
+    colorMapping: 'average',
     dithering: { algorithm: 'none', strength: 0 },
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
