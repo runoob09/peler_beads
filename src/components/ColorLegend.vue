@@ -127,7 +127,7 @@ function render() {
 
     // Label on swatch — 20px bold
     ctx.fillStyle = textColor(item.color.hex)
-    ctx.font = 'bold 20px monospace'
+    ctx.font = 'bold 16px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(labelShort(item.color.name), cx + SWATCH_W / 2, cy + 3 + swatchH / 2)
