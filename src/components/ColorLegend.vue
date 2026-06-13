@@ -9,7 +9,7 @@ const containerRef = ref<HTMLDivElement>()
 
 const panelWidth = ref(220)
 const MIN_W = 160
-const MAX_W = 400
+const MAX_W = 420
 const dragging = ref(false)
 const dragStartX = ref(0)
 const dragStartW = ref(0)
@@ -45,7 +45,9 @@ function labelShort(name: string): string {
 }
 
 const ROW_H = 26
-const HEADER_H = 28
+const HEADER_H = 30
+const PAD = 10
+const ITEM_MIN_W = 150
 
 function render() {
   const canvas = canvasRef.value
@@ -54,7 +56,14 @@ function render() {
 
   const dpr = window.devicePixelRatio || 1
   const W = canvas.clientWidth
-  const H = HEADER_H + items.length * ROW_H + 8
+  const availW = W - PAD * 2
+
+  // Calculate columns
+  const cols = Math.max(1, Math.floor(availW / ITEM_MIN_W))
+  const colW = Math.floor(availW / cols)
+  const rows = Math.ceil(items.length / cols)
+
+  const H = HEADER_H + rows * ROW_H + 10
 
   canvas.width = W * dpr
   canvas.height = H * dpr
@@ -67,47 +76,52 @@ function render() {
 
   const styles = getComputedStyle(canvas)
   const bg = styles.getPropertyValue('--bg') || '#ffffff'
-  const textColorVal = styles.getPropertyValue('--text') || '#6b6375'
+  const textCol = styles.getPropertyValue('--text') || '#6b6375'
   const textH = styles.getPropertyValue('--text-h') || '#08060d'
   const borderCol = styles.getPropertyValue('--border') || '#e5e4e7'
 
   ctx.fillStyle = bg
   ctx.fillRect(0, 0, W, H)
 
-  // Title row — left: title, right: summary
+  // Title
   ctx.fillStyle = textH
   ctx.font = '600 13px system-ui'
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText('色彩图例', 12, 6)
+  ctx.fillText('色彩图例', PAD, 6)
 
   if (props.beadGrid) {
     const total = props.beadGrid.rows * props.beadGrid.cols
-    ctx.fillStyle = textColorVal
-    ctx.font = '11px monospace'
+    ctx.fillStyle = textCol
+    ctx.font = '10px monospace'
     ctx.textAlign = 'right'
-    ctx.fillText(`${items.length} 色 · ${total} 珠`, W - 12, 8)
+    ctx.fillText(`${items.length} 色 · ${total} 珠`, W - PAD, 8)
   }
 
   if (items.length === 0) return
 
-  const PAD = 12
-  const SWATCH_W = Math.max(40, W - PAD * 2 - 100)
-  const barAreaL = PAD + SWATCH_W + 44
+  const gap = 6
+  const swatchW = colW - gap - 50 // leave room for count + pct
 
-  items.forEach((item, i) => {
-    const y = HEADER_H + i * ROW_H
+  for (let i = 0; i < items.length; i++) {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const item = items[i]
+
+    const cx = PAD + col * colW
+    const cy = HEADER_H + row * ROW_H
+    const barW = Math.max(20, swatchW - 4)
 
     // Swatch
     ctx.fillStyle = item.color.hex
     ctx.beginPath()
-    ctx.roundRect(PAD, y, SWATCH_W, ROW_H - 6, 3)
+    ctx.roundRect(cx, cy, swatchW, ROW_H - 8, 3)
     ctx.fill()
 
     ctx.strokeStyle = borderCol
     ctx.lineWidth = 0.5
     ctx.beginPath()
-    ctx.roundRect(PAD, y, SWATCH_W, ROW_H - 6, 3)
+    ctx.roundRect(cx, cy, swatchW, ROW_H - 8, 3)
     ctx.stroke()
 
     // Label on swatch
@@ -115,30 +129,36 @@ function render() {
     ctx.font = 'bold 8px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(labelShort(item.color.name), PAD + SWATCH_W / 2, y + (ROW_H - 6) / 2)
+    ctx.fillText(labelShort(item.color.name), cx + swatchW / 2, cy + (ROW_H - 8) / 2)
 
     // Count
     ctx.fillStyle = textH
     ctx.font = '600 10px monospace'
     ctx.textAlign = 'right'
     ctx.textBaseline = 'middle'
-    ctx.fillText(String(item.count), PAD + SWATCH_W + 36, y + (ROW_H - 6) / 2)
+    ctx.fillText(String(item.count), cx + swatchW + 24, cy + (ROW_H - 8) / 2)
 
-    // Bar bg
-    const barW = Math.max(20, W - barAreaL - PAD)
-    const barY = y + ROW_H - 7
+    // Pct
+    ctx.fillStyle = textCol
+    ctx.font = '9px monospace'
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(`${item.pct}%`, cx + swatchW + 42, cy + (ROW_H - 8) / 2)
+
+    // Bar
+    const barY = cy + ROW_H - 5
     ctx.fillStyle = borderCol
     ctx.beginPath()
-    ctx.roundRect(barAreaL, barY, barW, 2, 1)
+    ctx.roundRect(cx + 1, barY, barW, 2, 1)
     ctx.fill()
 
     if (item.pct > 0) {
       ctx.fillStyle = item.color.hex
       ctx.beginPath()
-      ctx.roundRect(barAreaL, barY, Math.max(2, barW * item.pct / 100), 2, 1)
+      ctx.roundRect(cx + 1, barY, Math.max(2, barW * item.pct / 100), 2, 1)
       ctx.fill()
     }
-  })
+  }
 }
 
 // --- Drag resize ---
@@ -182,7 +202,7 @@ onUnmounted(() => {
   observer?.disconnect()
 })
 
-watch(sortedColors, () => { nextTick(render) }, { deep: true })
+watch([sortedColors, panelWidth], () => { nextTick(render) }, { deep: true })
 </script>
 
 <template>
@@ -206,7 +226,6 @@ watch(sortedColors, () => { nextTick(render) }, { deep: true })
   border-left: 1px solid var(--border, #e5e4e7);
   overflow-y: auto; max-height: 100vh; box-sizing: border-box;
   background: color-mix(in srgb, var(--bg, #fff) 98%, var(--text, #6b6375));
-  transition: none;
 }
 .color-legend.dragging { transition: none; }
 .legend-canvas { display: block; width: 100%; }
