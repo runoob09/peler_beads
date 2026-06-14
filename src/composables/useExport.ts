@@ -49,6 +49,7 @@ export function renderGridToCanvas(
   for (let row = 0; row < grid.rows; row++) {
     for (let col = 0; col < grid.cols; col++) {
       const cell = grid.cells[row][col]
+      if (cell.colorIndex === null) continue
       const color = grid.palette[cell.colorIndex]
       const x = col * cellSize
       const y = row * cellSize
@@ -72,7 +73,7 @@ export function renderGridToCanvas(
       }
 
       if (renderMode === 'symbol' || renderMode === 'mixed') {
-        const symbol = symbolMap!.get(cell.colorIndex) ?? '?'
+        const symbol = symbolMap!.get(cell.colorIndex!) ?? '?'
         const fontSize = cellSize * 0.6
         ctx.font = `${fontSize}px monospace`
         ctx.textAlign = 'center'
@@ -133,6 +134,7 @@ export function countColorUsage(grid: BeadGrid): Map<number, number> {
   const counts = new Map<number, number>()
   for (const row of grid.cells) {
     for (const cell of row) {
+      if (cell.colorIndex === null) continue
       counts.set(cell.colorIndex, (counts.get(cell.colorIndex) ?? 0) + 1)
     }
   }
@@ -212,6 +214,7 @@ export function renderExportCanvas(
   for (let row = 0; row < grid.rows; row++) {
     for (let col = 0; col < grid.cols; col++) {
       const cell = grid.cells[row][col]
+      if (cell.colorIndex === null) continue
       const color = grid.palette[cell.colorIndex]
       const x = MARGIN + col * cellSize
       const y = MARGIN + row * cellSize

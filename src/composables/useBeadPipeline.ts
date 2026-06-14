@@ -45,7 +45,7 @@ export function useBeadPipeline() {
       const img = await loadImageFromFile(imageFile)
       progress.value = 30
 
-      const resized = resizeImage(img, s.gridCols, s.gridRows, s.keepAspectRatio)
+      const { canvas: resized, imageX, imageY, imageW, imageH } = resizeImage(img, s.gridCols, s.gridRows, s.keepAspectRatio)
       progress.value = 50
 
       const ctx = resized.getContext('2d')
@@ -73,6 +73,17 @@ export function useBeadPipeline() {
 
       const grid = applyDithering(imageData, palette, s.dithering.algorithm, s.dithering.strength)
       progress.value = 95
+
+      // Nullify cells outside the actual image area (contain mode)
+      for (let row = 0; row < grid.rows; row++) {
+        for (let col = 0; col < grid.cols; col++) {
+          if (col < imageX || col >= imageX + imageW || row < imageY || row >= imageY + imageH) {
+            grid.cells[row][col].colorIndex = null
+          }
+        }
+      }
+      grid.imageCols = imageW
+      grid.imageRows = imageH
 
       beadGrid.value = grid
       progress.value = 100

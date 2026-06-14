@@ -158,7 +158,7 @@ describe('resizeImage', () => {
 
   it('contain same-aspect fits exactly', () => {
     const src = mockSource(100, 100)
-    const { canvas, imageX, imageY, imageW, imageH } = resizeImage(src, 30, 30, true)
+    const { imageX, imageY, imageW, imageH } = resizeImage(src, 30, 30, true)
     expect(imageW).toBe(30)
     expect(imageH).toBe(30)
     expect(imageX).toBe(0)

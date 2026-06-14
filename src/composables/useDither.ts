@@ -31,6 +31,8 @@ export function applyDithering(
     cols: width,
     cells,
     palette,
+    imageCols: width,
+    imageRows: height,
   }
 }
 

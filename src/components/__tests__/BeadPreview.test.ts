@@ -15,6 +15,8 @@ function makeTestGrid(): BeadGrid {
       [{ row: 0, col: 0, colorIndex: 0 }, { row: 0, col: 1, colorIndex: 1 }],
       [{ row: 1, col: 0, colorIndex: 1 }, { row: 1, col: 1, colorIndex: 0 }],
     ],
+    imageCols: 2,
+    imageRows: 2,
   }
 }
 

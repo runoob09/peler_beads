@@ -4,7 +4,7 @@ import ColorLegend from '../ColorLegend.vue'
 import type { BeadGrid, PaletteColor } from '../../types'
 
 function makeGrid(colors: PaletteColor[], cells: { row: number; col: number; colorIndex: number }[][]): BeadGrid {
-  return { rows: cells.length, cols: cells[0]?.length ?? 0, palette: colors, cells }
+  return { rows: cells.length, cols: cells[0]?.length ?? 0, palette: colors, cells, imageCols: cells[0]?.length ?? 0, imageRows: cells.length }
 }
 
 const palette: PaletteColor[] = [

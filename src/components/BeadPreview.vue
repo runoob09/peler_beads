@@ -85,14 +85,18 @@ function onMouseLeave() {
 function onClick() {
   if (!props.beadGrid || !hoveredCell.value) return
   const { row, col } = hoveredCell.value
-  const color = props.beadGrid.palette[props.beadGrid.cells[row][col].colorIndex]
+  const colorIndex = props.beadGrid.cells[row][col].colorIndex
+  if (colorIndex === null) return
+  const color = props.beadGrid.palette[colorIndex]
   emit('cell-click', { row, col, color })
 }
 
 const hoveredColor = computed(() => {
   if (!hoveredCell.value || !props.beadGrid) return null
   const { row, col } = hoveredCell.value
-  return props.beadGrid.palette[props.beadGrid.cells[row][col].colorIndex]
+  const colorIndex = props.beadGrid.cells[row][col].colorIndex
+  if (colorIndex === null) return null
+  return props.beadGrid.palette[colorIndex]
 })
 
 function onWheel(event: WheelEvent) {
