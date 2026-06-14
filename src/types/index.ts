@@ -9,7 +9,7 @@ export interface PaletteColor {
 export interface BeadCell {
   row: number
   col: number
-  colorIndex: number
+  colorIndex: number | null
 }
 
 export interface BeadGrid {
@@ -17,6 +17,8 @@ export interface BeadGrid {
   cols: number
   cells: BeadCell[][]
   palette: PaletteColor[]
+  imageCols: number
+  imageRows: number
 }
 
 export type DitherAlgorithm = 'none' | 'floydSteinberg' | 'atkinson'
