@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, nextTick, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import type { BeadGrid, DisplaySettings, PaletteColor } from '../types'
 import { renderGridToCanvas } from '../composables/useExport'
 
@@ -17,6 +17,24 @@ const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
 const hoveredCell = ref<{ row: number; col: number } | null>(null)
 const cellSize = ref(20)
+
+// Zoom & pan state
+const zoom = ref(1)
+const panX = ref(0)
+const panY = ref(0)
+const isPanning = ref(false)
+const panStart = ref({ x: 0, y: 0 })
+const panStartPos = ref({ x: 0, y: 0 })
+
+const MIN_ZOOM = 0.25
+const MAX_ZOOM = 4
+const ZOOM_STEP = 0.1
+
+const zoomPercent = computed(() => Math.round(zoom.value * 100))
+
+function clampZoom(z: number): number {
+  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z))
+}
 
 function render() {
   if (!canvasRef.value || !props.beadGrid) return
@@ -46,12 +64,13 @@ function render() {
 }
 
 function onMouseMove(event: MouseEvent) {
-  if (!props.beadGrid || !canvasRef.value) return
+  if (!props.beadGrid || !canvasRef.value || isPanning.value) return
   const rect = canvasRef.value.getBoundingClientRect()
   const x = event.clientX - rect.left
   const y = event.clientY - rect.top
-  const col = Math.floor(x / cellSize.value)
-  const row = Math.floor(y / cellSize.value)
+  const scaledCell = cellSize.value * zoom.value
+  const col = Math.floor(x / scaledCell)
+  const row = Math.floor(y / scaledCell)
   if (row >= 0 && row < props.beadGrid.rows && col >= 0 && col < props.beadGrid.cols) {
     hoveredCell.value = { row, col }
   } else {
@@ -76,6 +95,46 @@ const hoveredColor = computed(() => {
   return props.beadGrid.palette[props.beadGrid.cells[row][col].colorIndex]
 })
 
+function onWheel(event: WheelEvent) {
+  if (!event.ctrlKey) return
+  event.preventDefault()
+  const delta = event.deltaY < 0 ? ZOOM_STEP : -ZOOM_STEP
+  const oldZoom = zoom.value
+  const newZoom = clampZoom(oldZoom + delta)
+
+  // Zoom toward cursor position
+  if (containerRef.value) {
+    const rect = containerRef.value.getBoundingClientRect()
+    const cx = event.clientX - rect.left
+    const cy = event.clientY - rect.top
+    const scale = newZoom / oldZoom
+    panX.value = cx - scale * (cx - panX.value)
+    panY.value = cy - scale * (cy - panY.value)
+  }
+
+  zoom.value = newZoom
+}
+
+function onPanStart(event: MouseEvent) {
+  isPanning.value = true
+  panStart.value = { x: event.clientX, y: event.clientY }
+  panStartPos.value = { x: panX.value, y: panY.value }
+}
+
+function onPanMove(event: MouseEvent) {
+  if (!isPanning.value) return
+  panX.value = panStartPos.value.x + (event.clientX - panStart.value.x)
+  panY.value = panStartPos.value.y + (event.clientY - panStart.value.y)
+}
+
+function onPanEnd() {
+  isPanning.value = false
+}
+
+const transformStyle = computed(() => {
+  return `transform: translate(${panX.value}px, ${panY.value}px) scale(${zoom.value})`
+})
+
 const stageLabel = computed(() => {
   const p = props.progress
   if (p <= 0) return ''
@@ -87,7 +146,15 @@ const stageLabel = computed(() => {
   return '完成'
 })
 
-onMounted(() => { nextTick(render) })
+onMounted(() => {
+  nextTick(render)
+  document.addEventListener('mousemove', onPanMove)
+  document.addEventListener('mouseup', onPanEnd)
+})
+onUnmounted(() => {
+  document.removeEventListener('mousemove', onPanMove)
+  document.removeEventListener('mouseup', onPanEnd)
+})
 watch(() => [props.beadGrid, props.display], () => { nextTick(render) }, { deep: true })
 </script>
 
@@ -104,12 +171,13 @@ watch(() => [props.beadGrid, props.display], () => { nextTick(render) }, { deep:
       </div>
     </template>
     <template v-if="beadGrid">
-      <div class="preview-canvas-wrap" style="position:relative">
-        <canvas ref="canvasRef" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @click="onClick" />
-        <div v-if="hoveredColor" class="tooltip" :style="{ left: ((hoveredCell?.col ?? 0) * cellSize + cellSize) + 'px', top: ((hoveredCell?.row ?? 0) * cellSize) + 'px' }">
+      <div class="preview-canvas-wrap" :style="transformStyle">
+        <canvas ref="canvasRef" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @click="onClick" @wheel="onWheel" @mousedown="onPanStart" />
+        <div v-if="hoveredColor" class="tooltip" :style="{ left: (panX + (hoveredCell?.col ?? 0) * cellSize * zoom + cellSize * zoom) + 'px', top: (panY + (hoveredCell?.row ?? 0) * cellSize * zoom) + 'px' }">
           {{ hoveredColor.name || hoveredColor.hex }}
         </div>
       </div>
+      <div class="zoom-indicator">{{ zoomPercent }}%</div>
       <div class="grid-info">{{ beadGrid.rows }} × {{ beadGrid.cols }} · {{ beadGrid.palette.length }} 色</div>
     </template>
     <div v-if="!beadGrid && progress === 0" class="empty-state"><p>上传图片开始</p></div>
@@ -117,9 +185,11 @@ watch(() => [props.beadGrid, props.display], () => { nextTick(render) }, { deep:
 </template>
 
 <style scoped>
-.bead-preview { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; background: var(--bg); position: relative; overflow: auto; }
+.bead-preview { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; background: var(--bg); position: relative; overflow: hidden; }
+.preview-canvas-wrap { transform-origin: 0 0; }
 .tooltip { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; pointer-events: none; transform: translate(8px, -50%); z-index: 10; }
-.grid-info { margin-top: 8px; font-size: 12px; color: var(--text); font-family: var(--mono, monospace); }
+.zoom-indicator { margin-top: 8px; font-size: 12px; color: var(--accent, #aa3bff); font-family: var(--mono, monospace); }
+.grid-info { margin-top: 4px; font-size: 12px; color: var(--text); font-family: var(--mono, monospace); }
 .empty-state { color: var(--text); font-size: 16px; }
 
 .progress-overlay {
