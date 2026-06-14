@@ -1,31 +1,43 @@
+export interface ResizeResult {
+  canvas: HTMLCanvasElement
+  imageX: number
+  imageY: number
+  imageW: number
+  imageH: number
+}
+
 export function resizeImage(
   source: HTMLImageElement | HTMLCanvasElement | ImageBitmap,
   targetWidth: number,
   targetHeight: number,
   keepAspectRatio: boolean,
-): HTMLCanvasElement {
+): ResizeResult {
   const canvas = document.createElement('canvas')
   canvas.width = targetWidth
   canvas.height = targetHeight
   const ctx = canvas.getContext('2d')
-  if (!ctx) return canvas
 
   if (!keepAspectRatio) {
-    ctx.drawImage(source, 0, 0, targetWidth, targetHeight)
-    return canvas
+    if (ctx) ctx.drawImage(source, 0, 0, targetWidth, targetHeight)
+    return { canvas, imageX: 0, imageY: 0, imageW: targetWidth, imageH: targetHeight }
   }
 
-  const srcW = source.width
-  const srcH = source.height
+  // Compute contain-fit dimensions
+  const srcW = 'naturalWidth' in source
+    ? (source as HTMLImageElement).naturalWidth
+    : (source as HTMLCanvasElement | ImageBitmap).width
+  const srcH = 'naturalHeight' in source
+    ? (source as HTMLImageElement).naturalHeight
+    : (source as HTMLCanvasElement | ImageBitmap).height
 
-  const scale = Math.max(targetWidth / srcW, targetHeight / srcH)
-  const scaledW = srcW * scale
-  const scaledH = srcH * scale
-  const offsetX = (targetWidth - scaledW) / 2
-  const offsetY = (targetHeight - scaledH) / 2
+  const scale = Math.min(targetWidth / srcW, targetHeight / srcH)
+  const imageW = Math.round(srcW * scale)
+  const imageH = Math.round(srcH * scale)
+  const imageX = Math.floor((targetWidth - imageW) / 2)
+  const imageY = Math.floor((targetHeight - imageH) / 2)
 
-  ctx.drawImage(source, offsetX, offsetY, scaledW, scaledH)
-  return canvas
+  if (ctx) ctx.drawImage(source, imageX, imageY, imageW, imageH)
+  return { canvas, imageX, imageY, imageW, imageH }
 }
 
 // Posterize image to N levels per channel for cartoon/flat color effect
