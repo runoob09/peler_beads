@@ -54,7 +54,7 @@ const emit = defineEmits<{
       <div v-if="settings.colorCalcMethod === 'bucket'" class="slider-row">
         <span class="slider-label">粒度</span>
         <input
-          type="range" min="2" max="16" :value="settings.bucketLevels"
+          type="range" min="2" max="32" :value="settings.bucketLevels"
           @input="emit('update:settings', { ...settings, bucketLevels: Number(($event.target as HTMLInputElement).value) })"
         />
         <span class="val">{{ settings.bucketLevels }}</span>
