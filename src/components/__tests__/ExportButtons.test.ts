@@ -1,31 +1,54 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ExportButtons from '../ExportButtons.vue'
+import type { DisplaySettings } from '../../types'
+
+function makeDisplay(overrides?: Partial<DisplaySettings>): DisplaySettings {
+  return {
+    showGrid: true,
+    gridLineColor: '#cccccc',
+    gridLineWidth: 1,
+    boldGridInterval: 10,
+    boldGridColor: '#000000',
+    boldGridWidth: 2,
+    renderMode: 'color',
+    ...overrides,
+  }
+}
 
 describe('ExportButtons', () => {
-  it('renders export buttons', () => {
-    const wrapper = mount(ExportButtons, { props: { hasGrid: true } })
-    expect(wrapper.text()).toContain('PNG')
-    expect(wrapper.text()).toContain('PDF')
+  it('renders export trigger button', () => {
+    const wrapper = mount(ExportButtons, {
+      props: { hasGrid: true, defaultDisplay: makeDisplay(), gridCols: 10, gridRows: 10 },
+    })
+    expect(wrapper.text()).toContain('导出图纸')
+    expect(wrapper.text()).toContain('保存项目')
   })
 
-  it('emits png export', async () => {
-    const wrapper = mount(ExportButtons, { props: { hasGrid: true } })
+  it('opens modal on export button click', async () => {
+    const wrapper = mount(ExportButtons, {
+      props: { hasGrid: true, defaultDisplay: makeDisplay(), gridCols: 10, gridRows: 10 },
+    })
     const buttons = wrapper.findAll('button')
-    const pngBtn = buttons.find(b => b.text().includes('PNG'))
-    await pngBtn!.trigger('click')
-    expect(wrapper.emitted('export-png')).toBeTruthy()
+    const exportBtn = buttons.find(b => b.text().includes('导出图纸'))
+    await exportBtn!.trigger('click')
+    // Modal should be visible now
+    expect(document.body.textContent).toContain('PNG 图片')
   })
 
-  it('disables export when no grid', () => {
-    const wrapper = mount(ExportButtons, { props: { hasGrid: false } })
+  it('disables export trigger when no grid', () => {
+    const wrapper = mount(ExportButtons, {
+      props: { hasGrid: false, defaultDisplay: makeDisplay(), gridCols: 10, gridRows: 10 },
+    })
     const buttons = wrapper.findAll('button')
-    const pngBtn = buttons.find(b => b.text().includes('PNG'))
-    expect(pngBtn!.element.disabled).toBe(true)
+    const exportBtn = buttons.find(b => b.text().includes('导出图纸'))
+    expect(exportBtn!.element.disabled).toBe(true)
   })
 
   it('emits save project', async () => {
-    const wrapper = mount(ExportButtons, { props: { hasGrid: true } })
+    const wrapper = mount(ExportButtons, {
+      props: { hasGrid: true, defaultDisplay: makeDisplay(), gridCols: 10, gridRows: 10 },
+    })
     const buttons = wrapper.findAll('button')
     const saveBtn = buttons.find(b => b.text().includes('保存项目') && !b.text().includes('不含'))
     await saveBtn!.trigger('click')

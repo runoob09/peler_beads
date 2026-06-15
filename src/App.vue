@@ -7,7 +7,7 @@ import { usePalette } from './composables/usePalette'
 import { useBeadPipeline } from './composables/useBeadPipeline'
 import { exportPNG, downloadBlob } from './composables/useExport'
 import { generatePdf } from './utils/exportPdf'
-import type { BeadSettings, ProjectFile } from './types'
+import type { BeadSettings, ProjectFile, ExportConfig } from './types'
 
 const { brandNames, palette, selectedBrand, selectBrand, addCustomColor, removeColor } = usePalette()
 const { beadGrid, settings, process, progress, error } = useBeadPipeline()
@@ -44,35 +44,26 @@ function triggerProcess() {
 
 watch(selectedBrand, () => { triggerProcess() })
 
-async function onExportPng() {
+async function onExport(config: ExportConfig) {
   if (!beadGrid.value) return
-  const blob = await exportPNG(beadGrid.value, {
-    showGrid: settings.value.display.showGrid,
-    gridLineColor: settings.value.display.gridLineColor,
-    gridLineWidth: settings.value.display.gridLineWidth,
-    boldGridInterval: settings.value.display.boldGridInterval,
-    boldGridColor: settings.value.display.boldGridColor,
-    boldGridWidth: settings.value.display.boldGridWidth,
-  }, 20)
-  downloadBlob(blob, 'perler-beads.png')
-}
+  const gridLines = {
+    showGrid: config.showGrid,
+    gridLineColor: config.gridLineColor,
+    gridLineWidth: config.gridLineWidth,
+    boldGridInterval: config.boldGridInterval,
+    boldGridColor: config.boldGridColor,
+    boldGridWidth: config.boldGridWidth,
+  }
 
-async function onExportPdf() {
-  if (!beadGrid.value) return
-  const pdfBytes = await generatePdf(
-    beadGrid.value,
-    {
-      showGrid: settings.value.display.showGrid,
-      gridLineColor: settings.value.display.gridLineColor,
-      gridLineWidth: settings.value.display.gridLineWidth,
-      boldGridInterval: settings.value.display.boldGridInterval,
-      boldGridColor: settings.value.display.boldGridColor,
-      boldGridWidth: settings.value.display.boldGridWidth,
-    },
-    20,
-    `拼豆图案 ${beadGrid.value.cols}×${beadGrid.value.rows}`,
-  )
-  downloadBlob(new Blob([pdfBytes as any], { type: 'application/pdf' }), 'perler-beads.pdf')
+  if (config.format === 'png') {
+    const blob = await exportPNG(beadGrid.value, gridLines, config.cellSize)
+    downloadBlob(blob, `${config.filename}.png`)
+  } else {
+    const pdfBytes = await generatePdf(
+      beadGrid.value, gridLines, config.cellSize, config.filename,
+    )
+    downloadBlob(new Blob([pdfBytes as any], { type: 'application/pdf' }), `${config.filename}.pdf`)
+  }
 }
 
 function onSaveProject(includeImage: boolean) {
@@ -142,8 +133,7 @@ function onLoadProject() {
       @select-brand="selectBrand"
       @add-color="onAddColor"
       @remove-color="onRemoveColor"
-      @export-png="onExportPng"
-      @export-pdf="onExportPdf"
+      @export="onExport"
       @save-project="onSaveProject"
       @load-project="onLoadProject"
     />

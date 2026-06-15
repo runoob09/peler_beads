@@ -63,6 +63,18 @@ export interface ProjectFile {
   image?: string
 }
 
+export interface ExportConfig {
+  format: 'png' | 'pdf'
+  cellSize: number
+  filename: string
+  showGrid: boolean
+  gridLineColor: string
+  gridLineWidth: number
+  boldGridInterval: number
+  boldGridColor: string
+  boldGridWidth: number
+}
+
 export interface PixelImage {
   imageData: ImageData
   width: number

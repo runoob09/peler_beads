@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { BeadSettings, PaletteColor } from '../types'
+import type { BeadSettings, PaletteColor, ExportConfig } from '../types'
 import ImageUploader from './ImageUploader.vue'
 import SizeSelector from './SizeSelector.vue'
 import PalettePanel from './PalettePanel.vue'
@@ -21,8 +21,7 @@ const emit = defineEmits<{
   'select-brand': [brand: string]
   'add-color': [{ hex: string; name: string }]
   'remove-color': [id: string]
-  'export-png': []
-  'export-pdf': []
+  'export': [config: ExportConfig]
   'save-project': [withImage: boolean]
   'load-project': []
 }>()
@@ -54,8 +53,10 @@ const emit = defineEmits<{
     />
     <ExportButtons
       :hasGrid="hasGrid"
-      @export-png="emit('export-png')"
-      @export-pdf="emit('export-pdf')"
+      :defaultDisplay="settings.display"
+      :gridCols="settings.gridCols"
+      :gridRows="settings.gridRows"
+      @export="config => emit('export', config)"
       @save-project="emit('save-project', $event)"
       @load-project="emit('load-project')"
     />
