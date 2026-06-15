@@ -160,9 +160,9 @@ export function renderExportCanvas(
     .map(([idx, count]) => ({ paletteIndex: idx, color: grid.palette[idx], count }))
 
   const legendItemH = Math.max(10, cellSize * 0.8)
-  const legendCols = Math.min(4, Math.max(1, Math.floor(gridW / (cellSize * 12))))
+  const legendCols = Math.min(8, Math.max(1, Math.floor(gridW / (cellSize * 5))))
   const legendRows = Math.ceil(sortedColors.length / legendCols)
-  const legendH = legendRows * (legendItemH + 4) + 30
+  const legendH = legendRows * (legendItemH + 2) + 30
 
   const canvasH = MARGIN + gridH + legendH
 
@@ -286,10 +286,10 @@ export function renderExportCanvas(
     const lRow = Math.floor(i / legendCols)
     const item = sortedColors[i]
     const lx = MARGIN + lCol * colWidth
-    const ly = legendStartY + lRow * (legendItemH + 4)
+    const ly = legendStartY + lRow * (legendItemH + 2)
 
-    // Color swatch — wider block
-    const swatchW = legendItemH * 1.5
+    // Color swatch — width proportional to column width
+    const swatchW = colWidth * 0.65
     const swatchH = legendItemH * 0.9
     ctx.fillStyle = item.color.hex
     ctx.fillRect(lx, ly, swatchW, swatchH)
@@ -299,7 +299,7 @@ export function renderExportCanvas(
 
     // Color code inside swatch — centered
     const code = getColorLabel(item.color)
-    ctx.font = `bold ${cellSize * 0.3}px monospace`
+    ctx.font = `bold ${cellSize * 0.35}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = getTextColor(item.color.hex)
@@ -310,7 +310,7 @@ export function renderExportCanvas(
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`${item.count}`, lx + swatchW + 6, ly + swatchH / 2)
+    ctx.fillText(`${item.count}`, lx + swatchW + 4, ly + swatchH / 2)
   }
 
   return canvas
