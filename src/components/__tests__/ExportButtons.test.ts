@@ -22,7 +22,7 @@ describe('ExportButtons', () => {
       props: { hasGrid: true, defaultDisplay: makeDisplay(), gridCols: 10, gridRows: 10 },
     })
     expect(wrapper.text()).toContain('导出图纸')
-    expect(wrapper.text()).toContain('保存项目')
+    expect(wrapper.text()).toContain('从图纸恢复')
   })
 
   it('opens modal on export button click', async () => {
@@ -45,14 +45,13 @@ describe('ExportButtons', () => {
     expect(exportBtn!.element.disabled).toBe(true)
   })
 
-  it('emits save project', async () => {
+  it('emits import drawing', async () => {
     const wrapper = mount(ExportButtons, {
       props: { hasGrid: true, defaultDisplay: makeDisplay(), gridCols: 10, gridRows: 10 },
     })
     const buttons = wrapper.findAll('button')
-    const saveBtn = buttons.find(b => b.text().includes('保存项目') && !b.text().includes('不含'))
-    await saveBtn!.trigger('click')
-    const emitted = wrapper.emitted('save-project')!
-    expect(emitted[0][0]).toBe(true)
+    const importBtn = buttons.find(b => b.text().includes('从图纸恢复'))
+    await importBtn!.trigger('click')
+    expect(wrapper.emitted('import-drawing')).toBeTruthy()
   })
 })

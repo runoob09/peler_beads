@@ -8,7 +8,7 @@ import { useBeadPipeline } from './composables/useBeadPipeline'
 import { exportPNG, downloadBlob } from './composables/useExport'
 import { generatePdf } from './utils/exportPdf'
 import { extractFromPng, extractFromPdf } from './utils/embedMetadata'
-import type { BeadSettings, ProjectFile, ExportConfig } from './types'
+import type { BeadSettings, ExportConfig } from './types'
 
 const { brandNames, palette, selectedBrand, selectBrand, addCustomColor, removeColor } = usePalette()
 const { beadGrid, settings, process, progress, error } = useBeadPipeline()
@@ -81,34 +81,6 @@ async function onExport(config: ExportConfig) {
   }
 }
 
-function onSaveProject(includeImage: boolean) {
-  if (!beadGrid.value) return
-  const project: ProjectFile = {
-    version: 1,
-    meta: {
-      name: `拼豆项目_${new Date().toISOString().slice(0, 10)}`,
-      createdAt: new Date().toISOString(),
-      brandPalette: selectedBrand.value,
-    },
-    settings: settings.value,
-    palette: {
-      brand: selectedBrand.value,
-      colors: palette.value.filter(c => c.brand !== 'custom'),
-      custom: palette.value.filter(c => c.brand === 'custom'),
-    },
-  }
-  if (includeImage && imageFile.value) {
-    const reader = new FileReader()
-    reader.onload = () => {
-      project.image = reader.result as string
-      downloadBlob(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }), project.meta.name + '.beads.json')
-    }
-    reader.readAsDataURL(imageFile.value)
-  } else {
-    downloadBlob(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }), project.meta.name + '.beads.json')
-  }
-}
-
 async function onImportFromDrawing() {
   const input = document.createElement('input')
   input.type = 'file'
@@ -151,30 +123,6 @@ async function onImportFromDrawing() {
   input.click()
 }
 
-function onLoadProject() {
-  const input = document.createElement('input')
-  input.type = 'file'
-  input.accept = '.beads.json,application/json'
-  input.onchange = async () => {
-    const file = input.files?.[0]
-    if (!file) return
-    const text = await file.text()
-    const project: ProjectFile = JSON.parse(text)
-    if (project.version !== 1) { alert('不支持的项目文件版本'); return }
-    settings.value = project.settings
-    selectBrand(project.palette.brand)
-    for (const c of project.palette.custom) {
-      addCustomColor({ hex: c.hex, name: c.name })
-    }
-    if (project.image) {
-      const resp = await fetch(project.image)
-      const blob = await resp.blob()
-      imageFile.value = new File([blob], 'restored.png', { type: 'image/png' })
-      triggerProcess()
-    }
-  }
-  input.click()
-}
 </script>
 
 <template>
@@ -190,8 +138,6 @@ function onLoadProject() {
       @select-brand="selectBrand"
       @remove-color="onRemoveColor"
       @export="onExport"
-      @save-project="onSaveProject"
-      @load-project="onLoadProject"
       @import-drawing="onImportFromDrawing"
     />
     <div class="preview-wrapper">

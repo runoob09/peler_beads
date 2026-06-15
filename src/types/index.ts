@@ -46,22 +46,6 @@ export interface BeadSettings {
   display: DisplaySettings
 }
 
-export interface ProjectFile {
-  version: 1
-  meta: {
-    name: string
-    createdAt: string
-    brandPalette: string
-  }
-  settings: BeadSettings
-  palette: {
-    brand: string
-    colors: PaletteColor[]
-    custom: PaletteColor[]
-  }
-  image?: string
-}
-
 export interface ExportConfig {
   format: 'png' | 'pdf'
   cellSize: number
