@@ -357,14 +357,19 @@ watch(
   border-radius: 6px;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.15s;
+  margin: 2px;
 }
 .brush-palette-swatch:hover {
   filter: brightness(0.95);
 }
 .brush-palette-swatch.active {
-  border-color: var(--accent, #aa3bff);
-  box-shadow: 0 0 0 1px var(--accent, #aa3bff);
+  border-color: transparent;
+  box-shadow:
+    0 0 0 3px rgba(170, 59, 255, 0.35),
+    0 2px 12px rgba(170, 59, 255, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.12);
+  transform: scale(1.03);
 }
 .swatch-label {
   font-size: 13px;
