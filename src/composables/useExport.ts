@@ -288,8 +288,8 @@ export function renderExportCanvas(
     const lx = MARGIN + lCol * colWidth
     const ly = legendStartY + lRow * (legendItemH + 2)
 
-    // Color swatch — width proportional to column width
-    const swatchW = colWidth * 0.65
+    // Color swatch — 40% column width, 90% row height
+    const swatchW = colWidth * 0.4
     const swatchH = legendItemH * 0.9
     ctx.fillStyle = item.color.hex
     ctx.fillRect(lx, ly, swatchW, swatchH)
