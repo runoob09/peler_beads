@@ -51,7 +51,16 @@ const emit = defineEmits<{
       >
         <option value="average">平均色彩</option>
         <option value="dominant">主导色彩</option>
+        <option value="bucket">色桶主导</option>
       </select>
+      <div v-if="settings.colorCalcMethod === 'bucket'" class="slider-row">
+        <span class="slider-label">粒度</span>
+        <input
+          type="range" min="2" max="16" :value="settings.bucketLevels"
+          @input="emit('update:settings', { ...settings, bucketLevels: Number(($event.target as HTMLInputElement).value) })"
+        />
+        <span class="val">{{ settings.bucketLevels }}</span>
+      </div>
       <label class="label" style="margin-top:8px">映射方式</label>
       <select
         :value="settings.colorMatchMethod"
@@ -96,4 +105,8 @@ const emit = defineEmits<{
   padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
   font-size: 13px; background: var(--bg); color: var(--text-h);
 }
+.slider-row { display: flex; align-items: center; gap: 6px; }
+.slider-label { font-size: 12px; color: var(--text); width: 28px; }
+.slider-row input[type="range"] { flex: 1; }
+.val { font-size: 12px; color: var(--text); font-family: var(--mono, monospace); width: 16px; text-align: right; }
 </style>

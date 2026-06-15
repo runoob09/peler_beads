@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { BeadGrid, BeadSettings, PaletteColor, BeadCell } from '../types'
-import { loadImageFromFile, computeAverageCells, computeDominantCells, applyAdjustments } from './useImageProcessor'
+import { loadImageFromFile, computeAverageCells, computeBucketCells, computeDominantCells, applyAdjustments } from './useImageProcessor'
 import { createColorMatcher } from './useColorMatcher'
 
 export function useBeadPipeline() {
@@ -14,6 +14,7 @@ export function useBeadPipeline() {
     keepAspectRatio: true,
     colorCalcMethod: 'average',
     colorMatchMethod: 'deltaE',
+    bucketLevels: 8,
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
@@ -47,6 +48,8 @@ export function useBeadPipeline() {
 
       if (s.colorCalcMethod === 'dominant') {
         beadGrid.value = await processDominant(img, palette, s)
+      } else if (s.colorCalcMethod === 'bucket') {
+        beadGrid.value = await processBucket(img, palette, s)
       } else {
         beadGrid.value = await processAverage(img, palette, s)
       }
@@ -104,6 +107,43 @@ async function processAverage(
       }
       if (avg.a === 0) return { row, col, colorIndex: null }
       const match = matchColor(avg.r, avg.g, avg.b)
+      return { row, col, colorIndex: match.index }
+    }),
+  )
+
+  return { rows: s.gridRows, cols: s.gridCols, cells, palette, imageCols, imageRows }
+}
+
+/** 色桶：像素量化到桶 → 区域内投票最多桶 → 桶中心色 → 调整 → 匹配 */
+async function processBucket(
+  img: HTMLImageElement,
+  palette: PaletteColor[],
+  s: BeadSettings,
+): Promise<BeadGrid> {
+  const { cells: bucketCells, imageCols, imageRows, imageX, imageY } =
+    computeBucketCells(img, s.gridCols, s.gridRows, s.keepAspectRatio, s.bucketLevels)
+
+  for (const row of bucketCells) {
+    for (const cell of row) {
+      const adj = applyAdjustmentsToPixel(
+        cell.r, cell.g, cell.b,
+        s.adjustments.brightness,
+        s.adjustments.contrast,
+        s.adjustments.saturation,
+      )
+      cell.r = adj.r; cell.g = adj.g; cell.b = adj.b
+    }
+  }
+
+  const matchColor = createColorMatcher(palette, s.colorMatchMethod)
+  const cells: BeadCell[][] = Array.from({ length: s.gridRows }, (_, row) =>
+    Array.from({ length: s.gridCols }, (_, col) => {
+      const bk = bucketCells[row][col]
+      if (col < imageX || col >= imageX + imageCols || row < imageY || row >= imageY + imageRows) {
+        return { row, col, colorIndex: null as number | null }
+      }
+      if (bk.a === 0) return { row, col, colorIndex: null }
+      const match = matchColor(bk.r, bk.g, bk.b)
       return { row, col, colorIndex: match.index }
     }),
   )

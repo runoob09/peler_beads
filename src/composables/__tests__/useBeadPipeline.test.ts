@@ -10,6 +10,7 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
     keepAspectRatio: true,
     colorCalcMethod: 'average',
     colorMatchMethod: 'deltaE',
+    bucketLevels: 8,
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
@@ -45,6 +46,7 @@ describe('useBeadPipeline', () => {
     expect(settings.value.gridRows).toBe(29)
     expect(settings.value.colorCalcMethod).toBe('average')
     expect(settings.value.colorMatchMethod).toBe('deltaE')
+    expect(settings.value.bucketLevels).toBe(8)
     expect(settings.value.adjustments.brightness).toBe(0)
   })
 

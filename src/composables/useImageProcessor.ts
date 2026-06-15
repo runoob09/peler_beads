@@ -268,6 +268,131 @@ function dominantBlock(
   return bestIndex
 }
 
+// ---- 色桶（Bucket）色彩计算 ----
+
+function quantizeToBucket(r: number, g: number, b: number, levels: number): number {
+  const step = 256 / levels
+  const qr = Math.min(levels - 1, Math.floor(r / step))
+  const qg = Math.min(levels - 1, Math.floor(g / step))
+  const qb = Math.min(levels - 1, Math.floor(b / step))
+  return qr * levels * levels + qg * levels + qb
+}
+
+function bucketCenterColor(bucketIndex: number, levels: number): { r: number; g: number; b: number } {
+  const step = 256 / levels
+  const qb = bucketIndex % levels
+  const qg = Math.floor(bucketIndex / levels) % levels
+  const qr = Math.floor(bucketIndex / (levels * levels))
+  return {
+    r: Math.round(qr * step + step / 2),
+    g: Math.round(qg * step + step / 2),
+    b: Math.round(qb * step + step / 2),
+  }
+}
+
+/**
+ * 色桶主导计算：将每个像素量化到 RGB 色桶，统计区域内出现最多的桶，
+ * 以该桶的中心色作为代表色返回。
+ * 和平均方案一样返回 RGB 值，后续由 pipeline 做调整和匹配。
+ */
+export function computeBucketCells(
+  source: HTMLImageElement,
+  gridCols: number,
+  gridRows: number,
+  keepAspectRatio: boolean,
+  bucketLevels: number,
+): AverageCellsResult {
+  const srcW = source.naturalWidth
+  const srcH = source.naturalHeight
+
+  const offCanvas = document.createElement('canvas')
+  offCanvas.width = srcW
+  offCanvas.height = srcH
+  const offCtx = offCanvas.getContext('2d')!
+  offCtx.drawImage(source, 0, 0)
+  const imageData = offCtx.getImageData(0, 0, srcW, srcH)
+  const data = imageData.data
+
+  const cells: AverageBlockResult[][] = Array.from({ length: gridRows }, () =>
+    Array.from({ length: gridCols }, () => ({ r: 0, g: 0, b: 0, a: 0 })),
+  )
+
+  let imageCols: number, imageRows: number, imageX: number, imageY: number
+
+  if (!keepAspectRatio) {
+    imageCols = gridCols
+    imageRows = gridRows
+    imageX = 0
+    imageY = 0
+
+    for (let row = 0; row < gridRows; row++) {
+      const y1 = Math.floor((row * srcH) / gridRows)
+      const y2 = Math.floor(((row + 1) * srcH) / gridRows)
+      for (let col = 0; col < gridCols; col++) {
+        const x1 = Math.floor((col * srcW) / gridCols)
+        const x2 = Math.floor(((col + 1) * srcW) / gridCols)
+        cells[row][col] = bucketDominantBlock(data, srcW, x1, x2, y1, y2, srcH, bucketLevels)
+      }
+    }
+  } else {
+    const scale = Math.min(gridCols / srcW, gridRows / srcH)
+    imageCols = Math.round(srcW * scale)
+    imageRows = Math.round(srcH * scale)
+    imageX = Math.floor((gridCols - imageCols) / 2)
+    imageY = Math.floor((gridRows - imageRows) / 2)
+
+    for (let r = 0; r < imageRows; r++) {
+      const y1 = Math.floor((r * srcH) / imageRows)
+      const y2 = Math.floor(((r + 1) * srcH) / imageRows)
+      for (let c = 0; c < imageCols; c++) {
+        const x1 = Math.floor((c * srcW) / imageCols)
+        const x2 = Math.floor(((c + 1) * srcW) / imageCols)
+        cells[imageY + r][imageX + c] = bucketDominantBlock(data, srcW, x1, x2, y1, y2, srcH, bucketLevels)
+      }
+    }
+  }
+
+  return { cells, imageCols, imageRows, imageX, imageY }
+}
+
+function bucketDominantBlock(
+  data: Uint8ClampedArray,
+  stride: number,
+  x1: number,
+  x2: number,
+  y1: number,
+  y2: number,
+  srcH: number,
+  levels: number,
+): AverageBlockResult {
+  const counts = new Map<number, number>()
+  let maxCount = 0
+  let bestBucket = 0
+
+  const sx = Math.max(0, x1)
+  const ex = Math.min(stride, x2)
+  const sy = Math.max(0, y1)
+  const ey = Math.min(y2, srcH)
+
+  for (let y = sy; y < ey; y++) {
+    for (let x = sx; x < ex; x++) {
+      const idx = (y * stride + x) * 4
+      if (data[idx + 3] === 0) continue
+      const bucket = quantizeToBucket(data[idx], data[idx + 1], data[idx + 2], levels)
+      const count = (counts.get(bucket) ?? 0) + 1
+      counts.set(bucket, count)
+      if (count > maxCount) {
+        maxCount = count
+        bestBucket = bucket
+      }
+    }
+  }
+
+  if (maxCount === 0) return { r: 0, g: 0, b: 0, a: 0 }
+  const center = bucketCenterColor(bestBucket, levels)
+  return { r: center.r, g: center.g, b: center.b, a: 255 }
+}
+
 export function applyAdjustments(
   imageData: ImageData,
   brightness: number,
