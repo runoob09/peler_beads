@@ -310,7 +310,7 @@ export function renderExportCanvas(
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`×${item.count}`, lx + swatchSize + 4, ly + swatchSize / 2)
+    ctx.fillText(`${item.count}`, lx + swatchSize + 4, ly + swatchSize / 2)
   }
 
   return canvas
