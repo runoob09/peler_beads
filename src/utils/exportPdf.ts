@@ -55,11 +55,12 @@ export async function generatePdf(
   y -= imgH + 20
 
   // Color legend
-  const legendSwatchSize = Math.max(6, Math.min(16, cellSize * 0.6))
+  const legendSwatchSize = Math.max(6, cellSize * 0.7)
   const legendFontSize = Math.max(5, legendSwatchSize * 0.7)
+  const legendTitleSize = Math.max(8, legendSwatchSize * 0.9)
 
-  page.drawText('颜色对照表', { x: margin, y, size: 10, font: boldFont })
-  y -= 16
+  page.drawText('颜色对照表', { x: margin, y, size: legendTitleSize, font: boldFont })
+  y -= legendTitleSize + 6
 
   const colorsPerRow = 8
   const tagColWidth = (595 - margin * 2) / colorsPerRow

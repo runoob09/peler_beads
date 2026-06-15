@@ -159,7 +159,7 @@ export function renderExportCanvas(
     .sort((a, b) => b[1] - a[1])
     .map(([idx, count]) => ({ paletteIndex: idx, color: grid.palette[idx], count }))
 
-  const legendItemH = Math.max(14, cellSize * 0.7)
+  const legendItemH = Math.max(10, cellSize * 0.8)
   const legendCols = Math.min(8, Math.max(1, Math.floor(gridW / (cellSize * 5))))
   const legendRows = Math.ceil(sortedColors.length / legendCols)
   const legendH = legendRows * (legendItemH + 2) + 30
