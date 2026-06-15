@@ -3,7 +3,6 @@ import type { BeadSettings, PaletteColor, ExportConfig } from '../types'
 import ImageUploader from './ImageUploader.vue'
 import SizeSelector from './SizeSelector.vue'
 import PalettePanel from './PalettePanel.vue'
-import DisplayOptions from './DisplayOptions.vue'
 import ExportButtons from './ExportButtons.vue'
 
 defineProps<{
@@ -108,10 +107,6 @@ const emit = defineEmits<{
       </template>
     </div>
 
-    <DisplayOptions
-      :modelValue="settings.display"
-      @update:modelValue="emit('update:settings', { ...settings, display: $event })"
-    />
     <ExportButtons
       :hasGrid="hasGrid"
       :defaultDisplay="settings.display"
