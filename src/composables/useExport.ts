@@ -223,9 +223,9 @@ export function renderExportCanvas(
       ctx.fillStyle = color.hex
       ctx.fillRect(x, y, cellSize, cellSize)
 
-      // Color label inside cell — single char centered
-      const label = getColorLabel(color).charAt(0)
-      const fontSize = cellSize * 0.5
+      // Color label inside cell — centered
+      const label = getColorLabel(color)
+      const fontSize = cellSize * 0.35
       ctx.font = `bold ${fontSize}px monospace`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -296,9 +296,9 @@ export function renderExportCanvas(
     ctx.lineWidth = 0.5
     ctx.strokeRect(lx, ly, swatchSize, swatchSize)
 
-    // Color code inside swatch — single char centered
-    const code = getColorLabel(item.color).charAt(0)
-    ctx.font = `bold ${cellSize * 0.5}px monospace`
+    // Color code inside swatch — centered
+    const code = getColorLabel(item.color)
+    ctx.font = `bold ${cellSize * 0.3}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = getTextColor(item.color.hex)
