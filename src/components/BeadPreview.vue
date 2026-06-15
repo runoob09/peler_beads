@@ -349,8 +349,8 @@ watch(
 }
 .brush-palette-swatch {
   display: flex; align-items: center; justify-content: center;
-  width: calc(20px * 1.618);   /* golden ratio */
-  height: 20px;
+  width: calc(40px * 1.618);   /* golden ratio */
+  height: 40px;
   border-radius: 4px;
   cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.15s;
@@ -369,7 +369,7 @@ watch(
   z-index: 1;
 }
 .swatch-code {
-  font-size: 8px;
+  font-size: 11px;
   font-family: monospace;
   font-weight: 700;
   text-align: center;
