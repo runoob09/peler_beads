@@ -16,7 +16,6 @@ export function useBeadPipeline() {
     colorMatchMethod: 'deltaE',
     bucketLevels: 8,
     tolerance: 30,
-    adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
       gridLineColor: '#cccccc',
@@ -103,18 +102,6 @@ async function processRgbCells(
 ): Promise<BeadGrid> {
   const { cells: rgbCells, imageCols, imageRows, imageX, imageY } = result
 
-  for (const row of rgbCells) {
-    for (const cell of row) {
-      const adj = applyAdjustmentsToPixel(
-        cell.r, cell.g, cell.b,
-        s.adjustments.brightness,
-        s.adjustments.contrast,
-        s.adjustments.saturation,
-      )
-      cell.r = adj.r; cell.g = adj.g; cell.b = adj.b
-    }
-  }
-
   const matchColor = createColorMatcher(palette, s.colorMatchMethod)
   const cells: BeadCell[][] = Array.from({ length: s.gridRows }, (_, row) =>
     Array.from({ length: s.gridCols }, (_, col) => {
@@ -130,38 +117,3 @@ async function processRgbCells(
   return { rows: s.gridRows, cols: s.gridCols, cells, palette, imageCols, imageRows }
 }
 
-function applyAdjustmentsToPixel(
-  r: number, g: number, b: number,
-  brightness: number, contrast: number, saturation: number,
-): { r: number; g: number; b: number } {
-  const bFactor = brightness / 100
-  const cFactor = (contrast + 100) / 100
-  const sFactor = (saturation + 100) / 100
-
-  let nr = r, ng = g, nb = b
-
-  if (brightness > 0) {
-    nr = nr + (255 - nr) * bFactor
-    ng = ng + (255 - ng) * bFactor
-    nb = nb + (255 - nb) * bFactor
-  } else if (brightness < 0) {
-    nr = nr * (1 + bFactor)
-    ng = ng * (1 + bFactor)
-    nb = nb * (1 + bFactor)
-  }
-
-  nr = (nr - 128) * cFactor + 128
-  ng = (ng - 128) * cFactor + 128
-  nb = (nb - 128) * cFactor + 128
-
-  const gray = 0.299 * nr + 0.587 * ng + 0.114 * nb
-  nr = gray + (nr - gray) * sFactor
-  ng = gray + (ng - gray) * sFactor
-  nb = gray + (nb - gray) * sFactor
-
-  return {
-    r: Math.max(0, Math.min(255, Math.round(nr))),
-    g: Math.max(0, Math.min(255, Math.round(ng))),
-    b: Math.max(0, Math.min(255, Math.round(nb))),
-  }
-}

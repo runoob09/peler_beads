@@ -1,26 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ColorAdjustments from '../ColorAdjustments.vue'
 import DisplayOptions from '../DisplayOptions.vue'
-import type { AdjustmentSettings, RenderMode } from '../../types'
-
-describe('ColorAdjustments', () => {
-  it('renders three sliders', () => {
-    const settings: AdjustmentSettings = { brightness: 0, contrast: 0, saturation: 0 }
-    const wrapper = mount(ColorAdjustments, { props: { modelValue: settings } })
-    const ranges = wrapper.findAll('input[type="range"]')
-    expect(ranges.length).toBe(3)
-  })
-
-  it('emits update on slider change', async () => {
-    const settings: AdjustmentSettings = { brightness: 0, contrast: 0, saturation: 0 }
-    const wrapper = mount(ColorAdjustments, { props: { modelValue: settings } })
-    const r = wrapper.findAll('input[type="range"]')[0]
-    await r.setValue(50)
-    const emitted = wrapper.emitted('update:modelValue')! as any
-    expect(emitted[0][0].brightness).toBe(50)
-  })
-})
+import type { RenderMode } from '../../types'
 
 describe('DisplayOptions', () => {
   it('renders render mode selector', () => {

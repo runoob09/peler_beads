@@ -3,7 +3,6 @@ import type { BeadSettings, PaletteColor, ExportConfig } from '../types'
 import ImageUploader from './ImageUploader.vue'
 import SizeSelector from './SizeSelector.vue'
 import PalettePanel from './PalettePanel.vue'
-import ColorAdjustments from './ColorAdjustments.vue'
 import DisplayOptions from './DisplayOptions.vue'
 import ExportButtons from './ExportButtons.vue'
 
@@ -79,10 +78,6 @@ const emit = defineEmits<{
       </select>
     </div>
 
-    <ColorAdjustments
-      :modelValue="settings.adjustments"
-      @update:modelValue="emit('update:settings', { ...settings, adjustments: $event })"
-    />
     <DisplayOptions
       :modelValue="settings.display"
       @update:modelValue="emit('update:settings', { ...settings, display: $event })"

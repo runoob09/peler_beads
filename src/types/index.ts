@@ -25,12 +25,6 @@ export type RenderMode = 'color' | 'symbol' | 'mixed'
 export type ColorCalcMethod = 'average' | 'dominant' | 'bucket' | 'median' | 'centerWeighted'
 export type ColorMatchMethod = 'deltaE' | 'rgb'
 
-export interface AdjustmentSettings {
-  brightness: number
-  contrast: number
-  saturation: number
-}
-
 export interface DisplaySettings {
   showGrid: boolean
   gridLineColor: string
@@ -49,7 +43,6 @@ export interface BeadSettings {
   colorMatchMethod: ColorMatchMethod
   bucketLevels: number
   tolerance: number
-  adjustments: AdjustmentSettings
   display: DisplaySettings
 }
 

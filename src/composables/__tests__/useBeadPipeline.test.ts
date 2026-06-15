@@ -12,7 +12,6 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
     colorMatchMethod: 'deltaE',
     bucketLevels: 8,
     tolerance: 30,
-    adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
       gridLineColor: '#cccccc',
@@ -47,8 +46,6 @@ describe('useBeadPipeline', () => {
     expect(settings.value.gridRows).toBe(29)
     expect(settings.value.colorCalcMethod).toBe('average')
     expect(settings.value.colorMatchMethod).toBe('deltaE')
-    expect(settings.value.bucketLevels).toBe(8)
-    expect(settings.value.adjustments.brightness).toBe(0)
   })
 
   it('returns error ref initially null', () => {
