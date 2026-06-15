@@ -3,15 +3,17 @@ import { ref, watch } from 'vue'
 import ControlPanel from './components/ControlPanel.vue'
 import BeadPreview from './components/BeadPreview.vue'
 import ColorLegend from './components/ColorLegend.vue'
-import { usePalette } from './composables/usePalette'
-import { useBeadPipeline } from './composables/useBeadPipeline'
+import { usePaletteStore } from './stores/paletteStore'
+import { useBeadStore } from './stores/beadStore'
+import { useBrushStore } from './stores/brushStore'
 import { exportPNG, downloadBlob } from './composables/useExport'
 import { generatePdf } from './utils/exportPdf'
 import { extractFromPng, extractFromPdf } from './utils/embedMetadata'
 import type { BeadSettings, ExportConfig } from './types'
 
-const { brandNames, palette, selectedBrand, selectBrand, addCustomColor, removeColor } = usePalette()
-const { beadGrid, settings, process, progress, error } = useBeadPipeline()
+const paletteStore = usePaletteStore()
+const beadStore = useBeadStore()
+const brushStore = useBrushStore()
 
 const imageFile = ref<File | null>(null)
 
@@ -21,12 +23,12 @@ function onUpload(file: File) {
 }
 
 function onUpdateSettings(s: BeadSettings) {
-  settings.value = s
+  beadStore.settings = s
   triggerProcess()
 }
 
 function onRemoveColor(id: string) {
-  removeColor(id)
+  paletteStore.removeColor(id)
   triggerProcess()
 }
 
@@ -34,14 +36,15 @@ let debounceTimer: ReturnType<typeof setTimeout>
 function triggerProcess() {
   clearTimeout(debounceTimer)
   debounceTimer = setTimeout(() => {
-    process(imageFile.value, palette.value, settings.value)
+    brushStore.resetHistory()
+    beadStore.process(imageFile.value, paletteStore.palette, beadStore.settings)
   }, 300)
 }
 
-watch(selectedBrand, () => { triggerProcess() })
+watch(() => paletteStore.selectedBrand, () => { triggerProcess() })
 
 async function onExport(config: ExportConfig) {
-  if (!beadGrid.value) return
+  if (!beadStore.beadGrid) return
   const gridLines = {
     showGrid: config.showGrid,
     gridLineColor: config.gridLineColor,
@@ -51,18 +54,16 @@ async function onExport(config: ExportConfig) {
     boldGridWidth: config.boldGridWidth,
   }
 
-  // Build project data for embedding
   const projectJson = JSON.stringify({
     version: 1,
-    settings: settings.value,
+    settings: beadStore.settings,
     palette: {
-      brand: selectedBrand.value,
-      colors: palette.value.filter(c => c.brand !== 'custom'),
-      custom: palette.value.filter(c => c.brand === 'custom'),
+      brand: paletteStore.selectedBrand,
+      colors: paletteStore.palette.filter(c => c.brand !== 'custom'),
+      custom: paletteStore.palette.filter(c => c.brand === 'custom'),
     },
   })
 
-  // Get original image bytes
   let imageBytes: Uint8Array | undefined
   if (imageFile.value) {
     const buf = await imageFile.value.arrayBuffer()
@@ -70,11 +71,11 @@ async function onExport(config: ExportConfig) {
   }
 
   if (config.format === 'png') {
-    const blob = await exportPNG(beadGrid.value, gridLines, config.cellSize, projectJson, imageBytes)
+    const blob = await exportPNG(beadStore.beadGrid, gridLines, config.cellSize, projectJson, imageBytes)
     downloadBlob(blob, `${config.filename}.png`)
   } else {
     const pdfBytes = await generatePdf(
-      beadGrid.value, gridLines, config.cellSize, config.filename,
+      beadStore.beadGrid, gridLines, config.cellSize, config.filename,
       projectJson, imageBytes, imageFile.value?.type,
     )
     downloadBlob(new Blob([pdfBytes as any], { type: 'application/pdf' }), `${config.filename}.pdf`)
@@ -101,14 +102,13 @@ async function onImportFromDrawing() {
 
       const project = JSON.parse(result.projectJson)
       if (project.settings) {
-        settings.value = { ...settings.value, ...project.settings }
+        beadStore.settings = { ...beadStore.settings, ...project.settings }
       }
       if (project.palette) {
-        selectBrand(project.palette.brand || '')
-        // Wait for brand palette to load
+        paletteStore.selectBrand(project.palette.brand || '')
         await new Promise(r => setTimeout(r, 100))
         for (const c of project.palette.custom || []) {
-          addCustomColor({ hex: c.hex, name: c.name })
+          paletteStore.addCustomColor({ hex: c.hex, name: c.name })
         }
       }
       if (result.imageBytes && result.imageBytes.length > 0) {
@@ -128,23 +128,22 @@ async function onImportFromDrawing() {
 <template>
   <div class="app-layout">
     <ControlPanel
-      :hasGrid="!!beadGrid"
-      :settings="settings"
-      :brandNames="brandNames"
-      :selectedBrand="selectedBrand"
-      :palette="palette"
+      :hasGrid="!!beadStore.beadGrid"
+      :settings="beadStore.settings"
+      :brandNames="paletteStore.brandNames"
+      :selectedBrand="paletteStore.selectedBrand"
+      :palette="paletteStore.palette"
       @upload="onUpload"
       @update:settings="onUpdateSettings"
-      @select-brand="selectBrand"
       @remove-color="onRemoveColor"
       @export="onExport"
       @import-drawing="onImportFromDrawing"
     />
     <div class="preview-wrapper">
-      <div v-if="error" class="error-banner">{{ error }}</div>
-      <BeadPreview :beadGrid="beadGrid" :display="settings.display" :progress="progress" />
+      <div v-if="beadStore.error" class="error-banner">{{ beadStore.error }}</div>
+      <BeadPreview :beadGrid="beadStore.beadGrid" :display="beadStore.settings.display" :progress="beadStore.progress" />
     </div>
-    <ColorLegend :beadGrid="beadGrid" />
+    <ColorLegend :beadGrid="beadStore.beadGrid" />
   </div>
 </template>
 
