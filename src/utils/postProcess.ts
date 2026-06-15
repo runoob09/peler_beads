@@ -1,137 +1,29 @@
-import type { BeadGrid, BeadCell, PaletteColor } from '../types'
+import type { BeadGrid } from '../types'
 import { hexToRgb, rgbToLab, deltaE } from './colorSpace'
 
-// ---- 阶段 1：孤岛清除 ----
-
 /**
- * 通过 flood-fill 找到所有同色连通区域，将面积小于 minIslandSize
- * 的孤岛替换为其边界接触最多的邻色。
+ * 全局频率合并：
+ * 1. 统计每种颜色在 grid 中出现的次数
+ * 2. 对所有颜色对，若 ΔE < threshold 则 union
+ * 3. union 时出现次数多的成为根（少数服从多数）
+ * 4. 批量替换 grid 中所有颜色为根索引
  */
-export function mergeIslands(grid: BeadGrid, minSize: number): void {
-  const { rows, cols, cells } = grid
-  const visited = Array.from({ length: rows }, () => new Array(cols).fill(false))
+export function postProcess(grid: BeadGrid, mergeThreshold: number): void {
+  const { cells, palette } = grid
+  const n = palette.length
+  if (n <= 1 || mergeThreshold <= 0) return
 
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (visited[r][c] || cells[r][c].colorIndex === null) continue
-      const index = cells[r][c].colorIndex!
-
-      // Flood-fill 找到当前同色区域
-      const region = floodFill(cells, visited, r, c, index, rows, cols)
-
-      if (region.length >= minSize) continue
-
-      // 孤岛：找边界接触最多的邻色
-      const borderColor = dominantBorderColor(cells, region, rows, cols, index)
-      if (borderColor === null) continue
-
-      // 替换整个区域
-      for (const [rr, cc] of region) {
-        cells[rr][cc].colorIndex = borderColor
+  // 1. 统计每种颜色的出现次数
+  const counts = new Array<number>(n).fill(0)
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell.colorIndex !== null) {
+        counts[cell.colorIndex]++
       }
     }
   }
-}
 
-function floodFill(
-  cells: BeadCell[][],
-  visited: boolean[][],
-  startR: number,
-  startC: number,
-  targetIndex: number,
-  rows: number,
-  cols: number,
-): [number, number][] {
-  const region: [number, number][] = []
-  const stack: [number, number][] = [[startR, startC]]
-  visited[startR][startC] = true
-
-  while (stack.length > 0) {
-    const [r, c] = stack.pop()!
-    region.push([r, c])
-
-    for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-      const nr = r + dr
-      const nc = c + dc
-      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
-      if (visited[nr][nc]) continue
-      if (cells[nr][nc].colorIndex !== targetIndex) continue
-      visited[nr][nc] = true
-      stack.push([nr, nc])
-    }
-  }
-
-  return region
-}
-
-function dominantBorderColor(
-  cells: BeadCell[][],
-  region: [number, number][],
-  rows: number,
-  cols: number,
-  selfIndex: number,
-): number | null {
-  const regionSet = new Set(region.map(([r, c]) => `${r},${c}`))
-  const counts = new Map<number, number>()
-
-  for (const [r, c] of region) {
-    for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
-      const nr = r + dr
-      const nc = c + dc
-      if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue
-      if (regionSet.has(`${nr},${nc}`)) continue
-      const neighborIdx = cells[nr][nc].colorIndex
-      if (neighborIdx === null || neighborIdx === selfIndex) continue
-      counts.set(neighborIdx, (counts.get(neighborIdx) ?? 0) + 1)
-    }
-  }
-
-  let best: number | null = null
-  let bestCount = 0
-  for (const [idx, count] of counts) {
-    if (count > bestCount) {
-      bestCount = count
-      best = idx
-    }
-  }
-  return best
-}
-
-// ---- 阶段 2：边界合并 ----
-
-interface ColorDistanceCache {
-  get(i: number, j: number): number
-}
-
-function makeColorCache(palette: PaletteColor[]): ColorDistanceCache {
-  const cache = new Map<string, number>()
-
-  // Pre-compute LAB for all palette colors
-  const labs = palette.map(c => {
-    const [r, g, b] = hexToRgb(c.hex)
-    return rgbToLab(r, g, b)
-  })
-
-  return {
-    get(i: number, j: number): number {
-      if (i === j) return 0
-      const key = i < j ? `${i},${j}` : `${j},${i}`
-      const cached = cache.get(key)
-      if (cached !== undefined) return cached
-      const d = deltaE(labs[i], labs[j])
-      cache.set(key, d)
-      return d
-    },
-  }
-}
-
-/**
- * 扫描 4-邻域，用并查集将所有"足够相近"的颜色归为一组，
- * 然后将每组统一为组内最小索引。
- */
-export function mergeBoundaries(grid: BeadGrid, threshold: number): void {
-  const { rows, cols, cells, palette } = grid
-  const n = palette.length
+  // 2. 并查集初始化
   const parent = Array.from({ length: n }, (_, i) => i)
 
   function find(x: number): number {
@@ -145,54 +37,35 @@ export function mergeBoundaries(grid: BeadGrid, threshold: number): void {
   function union(a: number, b: number) {
     const ra = find(a)
     const rb = find(b)
-    if (ra !== rb) {
-      // 让索引更小的成为根，保证最终颜色索引最小
-      if (ra < rb) parent[rb] = ra
-      else parent[ra] = rb
+    if (ra === rb) return
+    // 出现次数多的成为根
+    if (counts[ra] >= counts[rb]) {
+      parent[rb] = ra
+    } else {
+      parent[ra] = rb
     }
   }
 
-  const distCache = makeColorCache(palette)
+  // 3. 预计算 LAB + 比较合并
+  const labs = palette.map(c => {
+    const [r, g, b] = hexToRgb(c.hex)
+    return rgbToLab(r, g, b)
+  })
 
-  // 扫描每个格子的 4-邻域
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const idx = cells[r][c].colorIndex
-      if (idx === null) continue
-
-      // 只检查右和下（避免重复检查）
-      for (const [dr, dc] of [[0, 1], [1, 0]]) {
-        const nr = r + dr
-        const nc = c + dc
-        if (nr >= rows || nc >= cols) continue
-        const nidx = cells[nr][nc].colorIndex
-        if (nidx === null || nidx === idx) continue
-
-        if (distCache.get(idx, nidx) < threshold) {
-          union(idx, nidx)
-        }
+  for (let i = 0; i < n; i++) {
+    for (let j = i + 1; j < n; j++) {
+      if (deltaE(labs[i], labs[j]) < mergeThreshold) {
+        union(i, j)
       }
     }
   }
 
-  // 批量替换
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const idx = cells[r][c].colorIndex
-      if (idx === null) continue
-      cells[r][c].colorIndex = find(idx)
+  // 4. 批量替换
+  for (const row of cells) {
+    for (const cell of row) {
+      if (cell.colorIndex !== null) {
+        cell.colorIndex = find(cell.colorIndex)
+      }
     }
-  }
-}
-
-/**
- * 后处理入口：先清除孤岛，再合并边界相近色。
- */
-export function postProcess(grid: BeadGrid, minIslandSize: number, mergeThreshold: number): void {
-  if (minIslandSize > 1) {
-    mergeIslands(grid, minIslandSize)
-  }
-  if (mergeThreshold > 0) {
-    mergeBoundaries(grid, mergeThreshold)
   }
 }

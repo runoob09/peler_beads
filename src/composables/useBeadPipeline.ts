@@ -17,7 +17,7 @@ export function useBeadPipeline() {
     colorMatchMethod: 'deltaE',
     bucketLevels: 8,
     tolerance: 30,
-    merge: { enabled: false, minIslandSize: 3, mergeThreshold: 5 },
+    merge: { enabled: false, mergeThreshold: 5 },
     display: {
       showGrid: true,
       gridLineColor: '#cccccc',
@@ -77,7 +77,7 @@ export function useBeadPipeline() {
 
       // 后处理：清除孤岛 & 合并相近色
       if (s.merge.enabled && beadGrid.value) {
-        postProcess(beadGrid.value, s.merge.minIslandSize, s.merge.mergeThreshold)
+        postProcess(beadGrid.value, s.merge.mergeThreshold)
       }
 
       progress.value = 100

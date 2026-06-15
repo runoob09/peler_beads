@@ -12,7 +12,7 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
     colorMatchMethod: 'deltaE',
     bucketLevels: 8,
     tolerance: 30,
-    merge: { enabled: false, minIslandSize: 3, mergeThreshold: 5 },
+    merge: { enabled: false, mergeThreshold: 5 },
     display: {
       showGrid: true,
       gridLineColor: '#cccccc',

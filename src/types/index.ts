@@ -27,7 +27,6 @@ export type ColorMatchMethod = 'deltaE' | 'rgb' | 'weightedRgb' | 'ciede2000'
 
 export interface MergeSettings {
   enabled: boolean
-  minIslandSize: number
   mergeThreshold: number
 }
 

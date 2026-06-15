@@ -89,14 +89,6 @@ const emit = defineEmits<{
       </label>
       <template v-if="settings.merge.enabled">
         <div class="slider-row">
-          <span class="slider-label">孤岛</span>
-          <input
-            type="range" min="1" max="20" :value="settings.merge.minIslandSize"
-            @input="emit('update:settings', { ...settings, merge: { ...settings.merge, minIslandSize: Number(($event.target as HTMLInputElement).value) } })"
-          />
-          <span class="val">{{ settings.merge.minIslandSize }}</span>
-        </div>
-        <div class="slider-row">
           <span class="slider-label">色差</span>
           <input
             type="range" min="1" max="20" :value="settings.merge.mergeThreshold"
