@@ -143,7 +143,7 @@ async function onImportFromDrawing() {
       <div v-if="beadStore.error" class="error-banner">{{ beadStore.error }}</div>
       <BeadPreview />
     </div>
-    <ColorLegend :beadGrid="beadStore.beadGrid" />
+    <ColorLegend />
   </div>
 </template>
 

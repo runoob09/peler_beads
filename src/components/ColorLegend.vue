@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import type { BeadGrid } from '../types'
 import { countColorUsage } from '../composables/useExport'
+import { useBeadStore } from '../stores/beadStore'
+import { useBrushStore } from '../stores/brushStore'
 
-const props = defineProps<{ beadGrid: BeadGrid | null }>()
+const beadStore = useBeadStore()
+const brushStore = useBrushStore()
 const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
 
@@ -16,18 +18,20 @@ const dragStartW = ref(0)
 
 interface LegendItem {
   color: { id: string; name: string; hex: string }
+  paletteIndex: number
   count: number
   pct: number
 }
 
 const sortedColors = computed<LegendItem[]>(() => {
-  if (!props.beadGrid) return []
-  const counts = countColorUsage(props.beadGrid)
-  const total = props.beadGrid.rows * props.beadGrid.cols
+  if (!beadStore.beadGrid) return []
+  const counts = countColorUsage(beadStore.beadGrid)
+  const total = beadStore.beadGrid.rows * beadStore.beadGrid.cols
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([idx, count]) => ({
-      color: props.beadGrid!.palette[idx],
+      color: beadStore.beadGrid!.palette[idx],
+      paletteIndex: idx,
       count,
       pct: Math.round((count / total) * 100),
     }))
@@ -91,7 +95,7 @@ function render() {
   ctx.textBaseline = 'top'
   ctx.fillText('色彩图例', PAD, 10)
 
-  if (props.beadGrid) {
+  if (beadStore.beadGrid) {
     ctx.fillStyle = textCol
     ctx.font = '11px monospace'
     ctx.textAlign = 'right'
@@ -113,14 +117,21 @@ function render() {
     const cy = HEADER_H + row * ROW_H
     const midY = cy + ROW_H / 2
 
+    // Highlight active brush color row
+    const isActive = brushStore.brushMode && brushStore.activeColorIndex === item.paletteIndex
+    if (isActive) {
+      ctx.fillStyle = 'rgba(170, 59, 255, 0.15)'
+      ctx.fillRect(cx - 2, cy, colW, ROW_H)
+    }
+
     // Swatch — fixed 60px, height ROW_H-6
     ctx.fillStyle = item.color.hex
     ctx.beginPath()
     ctx.roundRect(cx, cy + 3, SWATCH_W, swatchH, 4)
     ctx.fill()
 
-    ctx.strokeStyle = 'rgba(0,0,0,0.08)'
-    ctx.lineWidth = 0.5
+    ctx.strokeStyle = isActive ? '#aa3bff' : 'rgba(0,0,0,0.08)'
+    ctx.lineWidth = isActive ? 2 : 0.5
     ctx.beginPath()
     ctx.roundRect(cx, cy + 3, SWATCH_W, swatchH, 4)
     ctx.stroke()
@@ -145,6 +156,36 @@ function render() {
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
     ctx.fillText(`${item.pct}%`, cx + countX, midY + 10)
+  }
+}
+
+// --- Canvas click for color selection ---
+function onCanvasClick(event: MouseEvent) {
+  if (!brushStore.brushMode) return
+  const canvas = canvasRef.value
+  if (!canvas) return
+  const items = sortedColors.value
+  if (items.length === 0) return
+
+  const rect = canvas.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+
+  const W = containerRef.value?.clientWidth ?? panelWidth.value
+  const availW = W - PAD * 2
+  const cols = Math.max(1, Math.floor(availW / ITEM_MAX_W))
+  const colW = Math.floor(availW / cols)
+
+  for (let i = 0; i < items.length; i++) {
+    const col = i % cols
+    const row = Math.floor(i / cols)
+    const cx = PAD + col * colW
+    const cy = HEADER_H + row * ROW_H
+
+    if (x >= cx && x <= cx + colW && y >= cy && y <= cy + ROW_H) {
+      brushStore.setActiveColor(items[i].paletteIndex)
+      return
+    }
   }
 }
 
@@ -193,12 +234,16 @@ onUnmounted(() => {
   observer?.disconnect()
 })
 
-watch([sortedColors, panelWidth], () => { nextTick(render) }, { deep: true })
+watch(
+  [sortedColors, panelWidth, () => brushStore.activeColorIndex, () => brushStore.brushMode],
+  () => { nextTick(render) },
+  { deep: true },
+)
 </script>
 
 <template>
   <aside
-    v-if="beadGrid"
+    v-if="beadStore.beadGrid"
     class="color-legend"
     :style="{ width: panelWidth + 'px' }"
     :class="{ dragging }"
@@ -207,7 +252,7 @@ watch([sortedColors, panelWidth], () => { nextTick(render) }, { deep: true })
       <span class="drag-grip"></span>
     </div>
     <div ref="containerRef" class="legend-scroll">
-      <canvas ref="canvasRef" class="legend-canvas" />
+      <canvas ref="canvasRef" class="legend-canvas" @click="onCanvasClick" />
     </div>
   </aside>
 </template>
