@@ -42,10 +42,6 @@ function swatchTextColor(hex: string): string {
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.53 ? '#1a1a2e' : '#ffffff'
 }
 
-function swatchLabel(name: string, hex: string): string {
-  return name.split(/[\s_]+/)[0] || hex
-}
-
 // Floating palette for brush mode
 const paletteColors = computed(() => {
   return paletteStore.palette.map((c, i) => ({ ...c, index: i }))
@@ -271,7 +267,6 @@ watch(
               :title="c.name || c.hex"
               @click="brushStore.setActiveColor(c.index)"
             >
-              <span class="swatch-label">{{ swatchLabel(c.name, c.hex) }}</span>
               <span class="swatch-name">{{ c.name || c.hex }}</span>
             </div>
           </div>
@@ -371,17 +366,10 @@ watch(
     0 1px 3px rgba(0, 0, 0, 0.12);
   transform: scale(1.03);
 }
-.swatch-label {
-  font-size: 13px;
-  font-family: monospace;
-  font-weight: 700;
-  min-width: 32px;
-  text-align: center;
-  flex-shrink: 0;
-}
 .swatch-name {
-  font-size: 12px;
+  font-size: 13px;
   font-family: system-ui;
+  font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
