@@ -267,7 +267,7 @@ watch(
               :title="c.name || c.hex"
               @click="brushStore.setActiveColor(c.index)"
             >
-              <span class="swatch-name">{{ c.name || c.hex }}</span>
+              <span class="swatch-code">{{ c.name.split(/[\s_]+/)[0] || c.hex }}</span>
             </div>
           </div>
         </div>
@@ -366,10 +366,10 @@ watch(
     0 1px 3px rgba(0, 0, 0, 0.12);
   transform: scale(1.03);
 }
-.swatch-name {
-  font-size: 13px;
-  font-family: system-ui;
-  font-weight: 600;
+.swatch-code {
+  font-size: 14px;
+  font-family: monospace;
+  font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
