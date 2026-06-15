@@ -288,7 +288,7 @@ export function renderExportCanvas(
     const lx = MARGIN + lCol * colWidth
     const ly = legendStartY + lRow * (legendItemH + 2)
 
-    // Color swatch — adaptive to legendItemH, no hard cap
+    // Color swatch
     const swatchSize = legendItemH * 0.7
     ctx.fillStyle = item.color.hex
     ctx.fillRect(lx, ly, swatchSize, swatchSize)
@@ -296,12 +296,21 @@ export function renderExportCanvas(
     ctx.lineWidth = 0.5
     ctx.strokeRect(lx, ly, swatchSize, swatchSize)
 
-    // Color label
-    const label = getColorLabel(item.color)
+    // Color code inside swatch
+    const code = getColorLabel(item.color)
+    const codeFontSize = Math.max(5, swatchSize * 0.55)
+    ctx.font = `bold ${codeFontSize}px monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = getTextColor(item.color.hex)
+    ctx.fillText(code, lx + swatchSize / 2, ly + swatchSize / 2)
+
+    // Count to the right
+    ctx.font = `${Math.max(7, legendItemH * 0.6)}px sans-serif`
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
-    ctx.textBaseline = 'top'
-    ctx.fillText(`${label} ×${item.count}`, lx + swatchSize + 4, ly)
+    ctx.textBaseline = 'middle'
+    ctx.fillText(`×${item.count}`, lx + swatchSize + 4, ly + swatchSize / 2)
   }
 
   return canvas
