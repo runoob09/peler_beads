@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import type { BeadGrid, BeadSettings, PaletteColor, BeadCell } from '../types'
 import { loadImageFromFile, computeAverageCells, computeBucketCells, computeDominantCells, computeMedianCells, computeCenterWeightedCells } from './useImageProcessor'
 import { createColorMatcher } from './useColorMatcher'
-import { postProcess } from '../utils/postProcess'
+
 
 export function useBeadPipeline() {
   const beadGrid = ref<BeadGrid | null>(null)
@@ -17,7 +17,6 @@ export function useBeadPipeline() {
     colorMatchMethod: 'deltaE',
     bucketLevels: 8,
     tolerance: 30,
-    merge: { enabled: false, mergeThreshold: 5 },
     display: {
       showGrid: true,
       gridLineColor: '#cccccc',
@@ -73,11 +72,6 @@ export function useBeadPipeline() {
           computeAverageCells(img, s.gridCols, s.gridRows, s.keepAspectRatio),
           palette, s,
         )
-      }
-
-      // 后处理：清除孤岛 & 合并相近色
-      if (s.merge.enabled && beadGrid.value) {
-        postProcess(beadGrid.value, s.merge.mergeThreshold)
       }
 
       progress.value = 100

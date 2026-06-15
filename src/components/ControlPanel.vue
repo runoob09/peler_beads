@@ -104,31 +104,6 @@ const emit = defineEmits<{
 
     <div class="divider" />
 
-    <div class="section">
-      <label class="toggle">
-        <input
-          type="checkbox" :checked="settings.merge.enabled"
-          @change="emit('update:settings', { ...settings, merge: { ...settings.merge, enabled: ($event.target as HTMLInputElement).checked } })"
-        />
-        <h3 class="section-title">后处理</h3>
-      </label>
-
-      <template v-if="settings.merge.enabled">
-        <div class="field">
-          <div class="slider-head">
-            <span class="field-label">色差阈值</span>
-            <span class="field-value">{{ settings.merge.mergeThreshold }}</span>
-          </div>
-          <input
-            type="range" min="1" max="20" :value="settings.merge.mergeThreshold"
-            @input="emit('update:settings', { ...settings, merge: { ...settings.merge, mergeThreshold: Number(($event.target as HTMLInputElement).value) } })"
-          />
-        </div>
-      </template>
-    </div>
-
-    <div class="divider" />
-
     <ExportButtons
       :hasGrid="hasGrid"
       :defaultDisplay="settings.display"

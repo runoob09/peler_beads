@@ -25,11 +25,6 @@ export type RenderMode = 'color' | 'symbol' | 'mixed'
 export type ColorCalcMethod = 'average' | 'dominant' | 'bucket' | 'median' | 'centerWeighted'
 export type ColorMatchMethod = 'deltaE' | 'rgb' | 'weightedRgb' | 'ciede2000'
 
-export interface MergeSettings {
-  enabled: boolean
-  mergeThreshold: number
-}
-
 export interface DisplaySettings {
   showGrid: boolean
   gridLineColor: string
@@ -48,7 +43,6 @@ export interface BeadSettings {
   colorMatchMethod: ColorMatchMethod
   bucketLevels: number
   tolerance: number
-  merge: MergeSettings
   display: DisplaySettings
 }
 
