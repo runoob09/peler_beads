@@ -181,21 +181,28 @@ export function renderExportCanvas(
   ctx.fillRect(0, 0, canvasW, canvasH)
 
   // --- Column headers ---
+  const headerLarge = cellSize * 0.8
+  const headerSmall = headerLarge * 0.6
   ctx.fillStyle = '#333333'
-  ctx.font = `bold ${cellSize * 0.8}px monospace`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   for (let col = 0; col < grid.cols; col++) {
+    const num = col + 1
+    const large = num % 10 === 0
+    ctx.font = `bold ${large ? headerLarge : headerSmall}px monospace`
     const x = originX + col * cellSize + cellSize / 2
-    ctx.fillText(String(col + 1), x, PADDING + MARGIN / 2)
+    ctx.fillText(String(num), x, PADDING + MARGIN / 2)
   }
 
   // --- Row headers ---
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   for (let row = 0; row < grid.rows; row++) {
+    const num = row + 1
+    const large = num % 10 === 0
+    ctx.font = `bold ${large ? headerLarge : headerSmall}px monospace`
     const y = originY + row * cellSize + cellSize / 2
-    ctx.fillText(String(row + 1), originX - MARGIN / 2, y)
+    ctx.fillText(String(num), originX - MARGIN / 2, y)
   }
 
   // --- Header border lines ---
@@ -226,11 +233,9 @@ export function renderExportCanvas(
       ctx.fillStyle = color.hex
       ctx.fillRect(x, y, cellSize, cellSize)
 
-      // Color label inside cell — large at 10-multiples, small elsewhere
+      // Color label inside cell — centered
       const label = getColorLabel(color)
-      const large = col % 10 === 0 && row % 10 === 0
-      const baseSize = cellSize * 0.5
-      const fontSize = large ? baseSize : baseSize * 0.6
+      const fontSize = cellSize * 0.35
       ctx.font = `bold ${fontSize}px monospace`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
