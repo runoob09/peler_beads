@@ -80,6 +80,34 @@ const emit = defineEmits<{
       </select>
     </div>
 
+    <div class="scheme-section">
+      <label class="checkbox-label">
+        <input
+          type="checkbox" :checked="settings.merge.enabled"
+          @change="emit('update:settings', { ...settings, merge: { ...settings.merge, enabled: ($event.target as HTMLInputElement).checked } })"
+        />
+        <span>后处理（合并相近色）</span>
+      </label>
+      <template v-if="settings.merge.enabled">
+        <div class="slider-row">
+          <span class="slider-label">孤岛</span>
+          <input
+            type="range" min="1" max="20" :value="settings.merge.minIslandSize"
+            @input="emit('update:settings', { ...settings, merge: { ...settings.merge, minIslandSize: Number(($event.target as HTMLInputElement).value) } })"
+          />
+          <span class="val">{{ settings.merge.minIslandSize }}</span>
+        </div>
+        <div class="slider-row">
+          <span class="slider-label">色差</span>
+          <input
+            type="range" min="1" max="20" :value="settings.merge.mergeThreshold"
+            @input="emit('update:settings', { ...settings, merge: { ...settings.merge, mergeThreshold: Number(($event.target as HTMLInputElement).value) } })"
+          />
+          <span class="val">{{ settings.merge.mergeThreshold }}</span>
+        </div>
+      </template>
+    </div>
+
     <DisplayOptions
       :modelValue="settings.display"
       @update:modelValue="emit('update:settings', { ...settings, display: $event })"
@@ -114,4 +142,5 @@ const emit = defineEmits<{
 .slider-label { font-size: 12px; color: var(--text); width: 28px; }
 .slider-row input[type="range"] { flex: 1; }
 .val { font-size: 12px; color: var(--text); font-family: var(--mono, monospace); width: 16px; text-align: right; }
+.checkbox-label { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-h); cursor: pointer; }
 </style>
