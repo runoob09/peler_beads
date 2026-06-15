@@ -55,23 +55,26 @@ export async function generatePdf(
   y -= imgH + 20
 
   // Color legend
+  const legendSwatchSize = Math.max(6, Math.min(16, cellSize * 0.6))
+  const legendFontSize = Math.max(5, legendSwatchSize * 0.7)
+
   page.drawText('颜色对照表', { x: margin, y, size: 10, font: boldFont })
   y -= 16
 
   const colorsPerRow = 8
-  const swatchSize = 10
+  const tagColWidth = (595 - margin * 2) / colorsPerRow
   for (let i = 0; i < grid.palette.length; i += colorsPerRow) {
     const row = grid.palette.slice(i, i + colorsPerRow)
     for (let j = 0; j < row.length; j++) {
-      const x = margin + j * 70
+      const x = margin + j * tagColWidth
       const hex = row[j].hex.replace('#', '')
       const r = parseInt(hex.slice(0, 2), 16) / 255
       const g = parseInt(hex.slice(2, 4), 16) / 255
       const b = parseInt(hex.slice(4, 6), 16) / 255
-      page.drawRectangle({ x, y: y - swatchSize, width: swatchSize, height: swatchSize, color: rgb(r, g, b) })
-      page.drawText(`${row[j].name || row[j].hex}`, { x: x + swatchSize + 4, y: y - swatchSize + 2, size: 7, font })
+      page.drawRectangle({ x, y: y - legendSwatchSize, width: legendSwatchSize, height: legendSwatchSize, color: rgb(r, g, b) })
+      page.drawText(`${row[j].name || row[j].hex}`, { x: x + legendSwatchSize + 4, y: y - legendSwatchSize + 2, size: legendFontSize, font })
     }
-    y -= 14
+    y -= Math.max(10, legendSwatchSize + 4)
     if (y < margin) {
       page = doc.addPage([595, 842])
       y = 842 - margin

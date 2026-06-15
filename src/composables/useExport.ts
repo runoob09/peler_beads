@@ -160,7 +160,7 @@ export function renderExportCanvas(
     .map(([idx, count]) => ({ paletteIndex: idx, color: grid.palette[idx], count }))
 
   const legendItemH = Math.max(14, cellSize * 0.7)
-  const legendCols = Math.max(1, Math.floor(gridW / (cellSize * 5)))
+  const legendCols = Math.min(8, Math.max(1, Math.floor(gridW / (cellSize * 5))))
   const legendRows = Math.ceil(sortedColors.length / legendCols)
   const legendH = legendRows * (legendItemH + 2) + 30
 
@@ -272,15 +272,15 @@ export function renderExportCanvas(
   // --- Legend ---
   const legendY = MARGIN + gridH + 10
   ctx.fillStyle = '#333333'
-  ctx.font = `bold ${Math.max(8, cellSize * 0.45)}px sans-serif`
+  ctx.font = `bold ${Math.max(8, legendItemH * 0.65)}px sans-serif`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   ctx.fillText('颜色图例（按数量降序）', MARGIN, legendY)
 
-  const legendStartY = legendY + 18
+  const legendStartY = legendY + Math.max(16, legendItemH * 0.9)
   const colWidth = Math.floor((canvasW - MARGIN) / legendCols)
 
-  ctx.font = `${Math.max(7, cellSize * 0.35)}px sans-serif`
+  ctx.font = `${Math.max(7, legendItemH * 0.6)}px sans-serif`
   for (let i = 0; i < sortedColors.length; i++) {
     const lCol = i % legendCols
     const lRow = Math.floor(i / legendCols)
@@ -288,8 +288,8 @@ export function renderExportCanvas(
     const lx = MARGIN + lCol * colWidth
     const ly = legendStartY + lRow * (legendItemH + 2)
 
-    // Color swatch
-    const swatchSize = Math.min(legendItemH - 2, 10)
+    // Color swatch — adaptive to legendItemH, no hard cap
+    const swatchSize = legendItemH * 0.7
     ctx.fillStyle = item.color.hex
     ctx.fillRect(lx, ly, swatchSize, swatchSize)
     ctx.strokeStyle = '#999999'
