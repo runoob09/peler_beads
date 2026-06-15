@@ -19,7 +19,6 @@ const emit = defineEmits<{
   'upload': [file: File]
   'update:settings': [settings: BeadSettings]
   'select-brand': [brand: string]
-  'add-color': [{ hex: string; name: string }]
   'remove-color': [id: string]
   'export': [config: ExportConfig]
   'save-project': [withImage: boolean]
@@ -40,7 +39,6 @@ const emit = defineEmits<{
       :selectedBrand="selectedBrand"
       :palette="palette"
       @select-brand="emit('select-brand', $event)"
-      @add-color="emit('add-color', $event)"
       @remove-color="emit('remove-color', $event)"
     />
     <div class="scheme-section">

@@ -24,11 +24,6 @@ function onUpdateSettings(s: BeadSettings) {
   triggerProcess()
 }
 
-function onAddColor(color: { hex: string; name: string }) {
-  addCustomColor(color)
-  triggerProcess()
-}
-
 function onRemoveColor(id: string) {
   removeColor(id)
   triggerProcess()
@@ -131,7 +126,6 @@ function onLoadProject() {
       @upload="onUpload"
       @update:settings="onUpdateSettings"
       @select-brand="selectBrand"
-      @add-color="onAddColor"
       @remove-color="onRemoveColor"
       @export="onExport"
       @save-project="onSaveProject"

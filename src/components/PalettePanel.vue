@@ -6,7 +6,6 @@ import PaletteEditor from './PaletteEditor.vue'
 defineProps<{ brandNames: string[]; selectedBrand: string; palette: PaletteColor[] }>()
 const emit = defineEmits<{
   'select-brand': [brand: string]
-  'add-color': [{ hex: string; name: string }]
   'remove-color': [id: string]
 }>()
 </script>
@@ -16,7 +15,7 @@ const emit = defineEmits<{
     <label class="label">色板</label>
     <PaletteSelector :modelValue="selectedBrand" :brandNames="brandNames" @update:modelValue="emit('select-brand', $event)" />
     <div class="color-count">{{ palette.length }} 种颜色</div>
-    <PaletteEditor :palette="palette" @add-color="emit('add-color', $event)" @remove-color="emit('remove-color', $event)" />
+    <PaletteEditor :palette="palette" @remove-color="emit('remove-color', $event)" />
   </div>
 </template>
 
