@@ -8,8 +8,8 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
     gridCols: 10,
     gridRows: 10,
     keepAspectRatio: true,
-    colorCalcMethod: 'average',
-    colorMatchMethod: 'deltaE',
+    colorCalcMethod: 'dominant',
+    colorMatchMethod: 'ciede2000',
     bucketLevels: 8,
     tolerance: 30,
     display: {
@@ -44,8 +44,8 @@ describe('useBeadPipeline', () => {
     const { settings } = useBeadPipeline()
     expect(settings.value.gridCols).toBe(29)
     expect(settings.value.gridRows).toBe(29)
-    expect(settings.value.colorCalcMethod).toBe('average')
-    expect(settings.value.colorMatchMethod).toBe('deltaE')
+    expect(settings.value.colorCalcMethod).toBe('dominant')
+    expect(settings.value.colorMatchMethod).toBe('ciede2000')
   })
 
   it('returns error ref initially null', () => {

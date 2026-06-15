@@ -13,8 +13,8 @@ export function useBeadPipeline() {
     gridCols: 29,
     gridRows: 29,
     keepAspectRatio: true,
-    colorCalcMethod: 'average',
-    colorMatchMethod: 'deltaE',
+    colorCalcMethod: 'dominant',
+    colorMatchMethod: 'ciede2000',
     bucketLevels: 8,
     tolerance: 30,
     display: {
