@@ -1,22 +1,29 @@
 <script setup lang="ts">
-import type { BeadSettings, PaletteColor, ExportConfig } from '../types'
+import type { BeadSettings, ExportConfig } from '../types'
+import { usePaletteStore } from '../stores/paletteStore'
+import { useBeadStore } from '../stores/beadStore'
+import { useBrushStore } from '../stores/brushStore'
 import ImageUploader from './ImageUploader.vue'
 import SizeSelector from './SizeSelector.vue'
 import PalettePanel from './PalettePanel.vue'
 import ExportButtons from './ExportButtons.vue'
 
+const paletteStore = usePaletteStore()
+const beadStore = useBeadStore()
+const brushStore = useBrushStore()
+
+// Still accept some props from App.vue for backward compat
 defineProps<{
   hasGrid: boolean
   settings: BeadSettings
   brandNames: string[]
   selectedBrand: string
-  palette: PaletteColor[]
+  palette: any[]
 }>()
 
 const emit = defineEmits<{
   'upload': [file: File]
   'update:settings': [settings: BeadSettings]
-  'select-brand': [brand: string]
   'remove-color': [id: string]
   'export': [config: ExportConfig]
   'import-drawing': []
@@ -42,8 +49,11 @@ const emit = defineEmits<{
       :brandNames="brandNames"
       :selectedBrand="selectedBrand"
       :palette="palette"
-      @select-brand="emit('select-brand', $event)"
+      :brushMode="brushStore.brushMode"
+      :activeColorIndex="brushStore.activeColorIndex"
+      @select-brand="paletteStore.selectBrand($event)"
       @remove-color="emit('remove-color', $event)"
+      @select-color="brushStore.setActiveColor($event)"
     />
 
     <div class="divider" />
@@ -99,6 +109,30 @@ const emit = defineEmits<{
           <option value="weightedRgb">加权 RGB</option>
         </select>
       </label>
+    </div>
+
+    <div class="divider" />
+
+    <!-- Brush Toolbar -->
+    <div class="section">
+      <h3 class="section-title">画笔编辑</h3>
+      <div class="brush-toolbar">
+        <button
+          class="brush-toggle"
+          :class="{ active: brushStore.brushMode }"
+          :disabled="!beadStore.beadGrid"
+          @click="brushStore.toggleBrushMode()"
+        >
+          🖌️ {{ brushStore.brushMode ? '编辑中' : '画笔' }}
+        </button>
+        <div v-if="brushStore.brushMode && brushStore.activeColorIndex !== null" class="brush-color-preview">
+          <span class="brush-swatch" :style="{ background: paletteStore.palette[brushStore.activeColorIndex]?.hex || '#ccc' }"></span>
+          <span class="brush-color-name">{{ paletteStore.palette[brushStore.activeColorIndex]?.name || '未选择' }}</span>
+        </div>
+      </div>
+      <div v-if="brushStore.brushMode" class="brush-hint">
+        拖拽涂色 · Ctrl+滚轮缩放 · Ctrl+Z/Y 撤销/重做
+      </div>
     </div>
 
     <div class="divider" />
@@ -164,5 +198,47 @@ const emit = defineEmits<{
 }
 .field input[type="range"] {
   width: 100%; margin: 0;
+}
+
+.brush-toolbar {
+  display: flex; align-items: center; gap: 8px;
+}
+.brush-toggle {
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text-h);
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.brush-toggle:hover:not(:disabled) {
+  border-color: var(--accent, #aa3bff);
+}
+.brush-toggle.active {
+  background: var(--accent, #aa3bff);
+  color: #fff;
+  border-color: var(--accent, #aa3bff);
+}
+.brush-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.brush-color-preview {
+  display: flex; align-items: center; gap: 4px;
+}
+.brush-swatch {
+  width: 16px; height: 16px; border-radius: 3px; border: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.brush-color-name {
+  font-size: 11px; color: var(--text);
+  font-family: var(--mono, monospace);
+  max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.brush-hint {
+  font-size: 11px; color: var(--text);
+  opacity: 0.7;
 }
 </style>
