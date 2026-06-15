@@ -297,9 +297,9 @@ export function renderExportCanvas(
     ctx.lineWidth = 0.5
     ctx.strokeRect(lx, ly, swatchW, swatchH)
 
-    // Color code inside swatch — centered
+    // Color code inside swatch — centered, 80% of swatch height
     const code = getColorLabel(item.color)
-    ctx.font = `bold ${cellSize * 0.35}px monospace`
+    ctx.font = `bold ${swatchH * 0.8}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = getTextColor(item.color.hex)
