@@ -162,7 +162,7 @@ function averageBlock(
     r: Math.round(r / count),
     g: Math.round(g / count),
     b: Math.round(b / count),
-    a: Math.round(a / count),
+    a: 255,
   }
 }
 
@@ -252,7 +252,6 @@ function toleranceDominantBlock(
   for (let y = sy; y < ey; y++) {
     for (let x = sx; x < ex; x++) {
       const idx = (y * stride + x) * 4
-      if (data[idx + 3] === 0) continue
 
       const pr = data[idx], pg = data[idx + 1], pb = data[idx + 2]
       let bestCluster = -1
@@ -309,7 +308,6 @@ function medianBlock(
   for (let y = sy; y < ey; y++) {
     for (let x = sx; x < ex; x++) {
       const idx = (y * stride + x) * 4
-      if (data[idx + 3] === 0) continue
       rs.push(data[idx])
       gs.push(data[idx + 1])
       bs.push(data[idx + 2])
@@ -361,7 +359,6 @@ function centerWeightedBlock(
   for (let y = sy; y < ey; y++) {
     for (let x = sx; x < ex; x++) {
       const idx = (y * stride + x) * 4
-      if (data[idx + 3] === 0) continue
 
       const dx = (x - cx) / halfW
       const dy = (y - cy) / halfH
@@ -570,7 +567,6 @@ function bucketDominantBlock(
   for (let y = sy; y < ey; y++) {
     for (let x = sx; x < ex; x++) {
       const idx = (y * stride + x) * 4
-      if (data[idx + 3] === 0) continue
       const bucket = quantizeToBucket(data[idx], data[idx + 1], data[idx + 2], levels)
       const count = (counts.get(bucket) ?? 0) + 1
       counts.set(bucket, count)

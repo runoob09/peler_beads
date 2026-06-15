@@ -122,7 +122,6 @@ async function processRgbCells(
       if (col < imageX || col >= imageX + imageCols || row < imageY || row >= imageY + imageRows) {
         return { row, col, colorIndex: null as number | null }
       }
-      if (c.a === 0) return { row, col, colorIndex: null }
       const match = matchColor(c.r, c.g, c.b)
       return { row, col, colorIndex: match.index }
     }),
