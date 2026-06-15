@@ -148,10 +148,13 @@ export function renderExportCanvas(
   gridLines: GridLineSettings,
   scale = 2,
 ): HTMLCanvasElement {
+  const PADDING = 20 // outer margin
   const MARGIN = cellSize // space for column headers and row labels
   const gridW = grid.cols * cellSize
   const gridH = grid.rows * cellSize
-  const canvasW = MARGIN + gridW
+  const originX = PADDING + MARGIN
+  const originY = PADDING + MARGIN
+  const canvasW = PADDING * 2 + MARGIN + gridW
 
   // Calculate legend dimensions
   const counts = countColorUsage(grid)
@@ -164,7 +167,7 @@ export function renderExportCanvas(
   const legendRows = Math.ceil(sortedColors.length / legendCols)
   const legendH = legendRows * (legendItemH + 2) + 30
 
-  const canvasH = MARGIN + gridH + legendH
+  const canvasH = originY + gridH + legendH + PADDING
 
   const canvas = document.createElement('canvas')
   canvas.width = canvasW * scale
@@ -183,32 +186,32 @@ export function renderExportCanvas(
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   for (let col = 0; col < grid.cols; col++) {
-    const x = MARGIN + col * cellSize + cellSize / 2
-    ctx.fillText(String(col + 1), x, MARGIN / 2)
+    const x = originX + col * cellSize + cellSize / 2
+    ctx.fillText(String(col + 1), x, PADDING + MARGIN / 2)
   }
 
   // --- Row headers ---
   ctx.textAlign = 'right'
   ctx.textBaseline = 'middle'
   for (let row = 0; row < grid.rows; row++) {
-    const y = MARGIN + row * cellSize + cellSize / 2
-    ctx.fillText(String(row + 1), MARGIN - 4, y)
+    const y = originY + row * cellSize + cellSize / 2
+    ctx.fillText(String(row + 1), originX - 4, y)
   }
 
   // --- Header border lines ---
   ctx.strokeStyle = '#333333'
   ctx.lineWidth = 1
   // Top-left corner
-  ctx.strokeRect(0, 0, MARGIN, MARGIN)
+  ctx.strokeRect(PADDING, PADDING, MARGIN, MARGIN)
   // Vertical separator
   ctx.beginPath()
-  ctx.moveTo(MARGIN, 0)
-  ctx.lineTo(MARGIN, MARGIN + gridH)
+  ctx.moveTo(originX, PADDING)
+  ctx.lineTo(originX, originY + gridH)
   ctx.stroke()
   // Horizontal separator
   ctx.beginPath()
-  ctx.moveTo(0, MARGIN)
-  ctx.lineTo(MARGIN + gridW, MARGIN)
+  ctx.moveTo(PADDING, originY)
+  ctx.lineTo(originX + gridW, originY)
   ctx.stroke()
 
   // --- Grid cells with color labels ---
@@ -217,8 +220,8 @@ export function renderExportCanvas(
       const cell = grid.cells[row][col]
       if (cell.colorIndex === null) continue
       const color = grid.palette[cell.colorIndex]
-      const x = MARGIN + col * cellSize
-      const y = MARGIN + row * cellSize
+      const x = originX + col * cellSize
+      const y = originY + row * cellSize
 
       ctx.fillStyle = color.hex
       ctx.fillRect(x, y, cellSize, cellSize)
@@ -240,14 +243,14 @@ export function renderExportCanvas(
     ctx.lineWidth = gridLines.gridLineWidth
     for (let row = 0; row <= grid.rows; row++) {
       ctx.beginPath()
-      ctx.moveTo(MARGIN, MARGIN + row * cellSize)
-      ctx.lineTo(MARGIN + gridW, MARGIN + row * cellSize)
+      ctx.moveTo(originX, originY + row * cellSize)
+      ctx.lineTo(originX + gridW, originY + row * cellSize)
       ctx.stroke()
     }
     for (let col = 0; col <= grid.cols; col++) {
       ctx.beginPath()
-      ctx.moveTo(MARGIN + col * cellSize, MARGIN)
-      ctx.lineTo(MARGIN + col * cellSize, MARGIN + gridH)
+      ctx.moveTo(originX + col * cellSize, originY)
+      ctx.lineTo(originX + col * cellSize, originY + gridH)
       ctx.stroke()
     }
   }
@@ -257,35 +260,35 @@ export function renderExportCanvas(
     ctx.lineWidth = gridLines.boldGridWidth
     for (let row = 0; row <= grid.rows; row += gridLines.boldGridInterval) {
       ctx.beginPath()
-      ctx.moveTo(MARGIN, MARGIN + row * cellSize)
-      ctx.lineTo(MARGIN + gridW, MARGIN + row * cellSize)
+      ctx.moveTo(originX, originY + row * cellSize)
+      ctx.lineTo(originX + gridW, originY + row * cellSize)
       ctx.stroke()
     }
     for (let col = 0; col <= grid.cols; col += gridLines.boldGridInterval) {
       ctx.beginPath()
-      ctx.moveTo(MARGIN + col * cellSize, MARGIN)
-      ctx.lineTo(MARGIN + col * cellSize, MARGIN + gridH)
+      ctx.moveTo(originX + col * cellSize, originY)
+      ctx.lineTo(originX + col * cellSize, originY + gridH)
       ctx.stroke()
     }
   }
 
   // --- Legend ---
-  const legendY = MARGIN + gridH + 10
+  const legendY = originY + gridH + 10
   ctx.fillStyle = '#333333'
   const legendTitleFontSize = cellSize * 0.8
   ctx.font = `bold ${legendTitleFontSize}px sans-serif`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText('颜色图例（按数量降序）', MARGIN, legendY)
+  ctx.fillText('颜色图例（按数量降序）', originX, legendY)
 
   const legendStartY = legendY + cellSize * 1.2
-  const colWidth = Math.floor((canvasW - MARGIN) / legendCols)
+  const colWidth = Math.floor((canvasW - originX - PADDING) / legendCols)
 
   for (let i = 0; i < sortedColors.length; i++) {
     const lCol = i % legendCols
     const lRow = Math.floor(i / legendCols)
     const item = sortedColors[i]
-    const lx = MARGIN + lCol * colWidth
+    const lx = originX + lCol * colWidth
     const ly = legendStartY + lRow * (legendItemH + 2)
 
     // Color swatch — 40% column width, 90% row height
