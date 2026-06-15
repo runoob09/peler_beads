@@ -69,4 +69,28 @@ describe('createColorMatcher', () => {
     const result = match(255, 0, 0)
     expect(result.rgb).toEqual([255, 0, 0])
   })
+
+  describe('rgb method', () => {
+    it('matches pure red to red', () => {
+      const palette: TestColor[] = [
+        makeColor('#FFFFFF', 'White'),
+        makeColor('#000000', 'Black'),
+        makeColor('#FF0000', 'Red'),
+        makeColor('#0000FF', 'Blue'),
+      ]
+      const match = createColorMatcher(palette, 'rgb')
+      const result = match(255, 0, 0)
+      expect(result.index).toBe(2)
+    })
+
+    it('matches dark gray closer to black', () => {
+      const palette: TestColor[] = [
+        makeColor('#FFFFFF', 'White'),
+        makeColor('#000000', 'Black'),
+      ]
+      const match = createColorMatcher(palette, 'rgb')
+      const result = match(30, 30, 30)
+      expect(result.index).toBe(1) // closer to black in RGB space
+    })
+  })
 })

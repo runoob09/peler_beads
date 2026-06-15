@@ -1,5 +1,5 @@
-import type { PaletteColor } from '../types'
-import { hexToRgb, rgbToLab, deltaE, type LAB, type RGB } from '../utils/colorSpace'
+import type { PaletteColor, ColorMatchMethod } from '../types'
+import { hexToRgb, rgbToLab, deltaE, rgbDistance, type LAB, type RGB } from '../utils/colorSpace'
 
 interface PaletteEntry {
   index: number
@@ -23,7 +23,10 @@ function makeCacheKey(r: number, g: number, b: number): string {
   return `${quantizeChannel(r)},${quantizeChannel(g)},${quantizeChannel(b)}`
 }
 
-export function createColorMatcher(palette: PaletteColor[]): MatchFunction {
+export function createColorMatcher(
+  palette: PaletteColor[],
+  method: ColorMatchMethod = 'deltaE',
+): MatchFunction {
   const entries: PaletteEntry[] = palette.map((c, i) => {
     const [r, g, b] = hexToRgb(c.hex)
     return {
@@ -36,6 +39,31 @@ export function createColorMatcher(palette: PaletteColor[]): MatchFunction {
 
   const cache = new Map<string, MatchResult>()
 
+  if (method === 'rgb') {
+    return (r: number, g: number, b: number): MatchResult => {
+      const key = makeCacheKey(r, g, b)
+      const cached = cache.get(key)
+      if (cached) return cached
+
+      const target: RGB = [r, g, b]
+      let bestIndex = 0
+      let bestDist = Infinity
+
+      for (let i = 0; i < entries.length; i++) {
+        const d = rgbDistance(target, entries[i].rgb)
+        if (d < bestDist) {
+          bestDist = d
+          bestIndex = i
+        }
+      }
+
+      const result: MatchResult = { index: bestIndex, rgb: entries[bestIndex].rgb }
+      cache.set(key, result)
+      return result
+    }
+  }
+
+  // default: deltaE
   return (r: number, g: number, b: number): MatchResult => {
     const key = makeCacheKey(r, g, b)
     const cached = cache.get(key)

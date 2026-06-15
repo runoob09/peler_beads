@@ -12,7 +12,8 @@ export function useBeadPipeline() {
     gridCols: 29,
     gridRows: 29,
     keepAspectRatio: true,
-    colorMatchScheme: 'average',
+    colorCalcMethod: 'average',
+    colorMatchMethod: 'deltaE',
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
@@ -44,11 +45,9 @@ export function useBeadPipeline() {
       const img = await loadImageFromFile(imageFile)
       progress.value = 30
 
-      if (s.colorMatchScheme === 'dominant') {
-        // 主导色方案：先对全图做亮度/对比度/饱和度调整，再逐像素匹配+投票
+      if (s.colorCalcMethod === 'dominant') {
         beadGrid.value = await processDominant(img, palette, s)
       } else {
-        // 平均色方案：分块取均值 → 逐格调整 → 匹配
         beadGrid.value = await processAverage(img, palette, s)
       }
 
@@ -73,7 +72,7 @@ export function useBeadPipeline() {
   }
 }
 
-/** 平均色方案：区域像素取均值 → 逐格调整 → Delta E 匹配 */
+/** 平均色彩：区域像素取均值 → 匹配 */
 async function processAverage(
   img: HTMLImageElement,
   palette: PaletteColor[],
@@ -82,7 +81,6 @@ async function processAverage(
   const { cells: avgCells, imageCols, imageRows, imageX, imageY } =
     computeAverageCells(img, s.gridCols, s.gridRows, s.keepAspectRatio)
 
-  // 对每个格子的平均色进行调整
   for (const row of avgCells) {
     for (const cell of row) {
       const adj = applyAdjustmentsToPixel(
@@ -97,8 +95,7 @@ async function processAverage(
     }
   }
 
-  // Delta E 最近邻匹配
-  const matchColor = createColorMatcher(palette)
+  const matchColor = createColorMatcher(palette, s.colorMatchMethod)
   const cells: BeadCell[][] = Array.from({ length: s.gridRows }, (_, row) =>
     Array.from({ length: s.gridCols }, (_, col) => {
       const avg = avgCells[row][col]
@@ -114,13 +111,12 @@ async function processAverage(
   return { rows: s.gridRows, cols: s.gridCols, cells, palette, imageCols, imageRows }
 }
 
-/** 主导色方案：全图调整 → 逐像素匹配 → 区域内投票选出最多出现的调色板颜色 */
+/** 主导色彩：全图调整 → 逐像素匹配 → 区域内投票 */
 async function processDominant(
   img: HTMLImageElement,
   palette: PaletteColor[],
   s: BeadSettings,
 ): Promise<BeadGrid> {
-  // 获取全分辨率像素
   const srcW = img.naturalWidth
   const srcH = img.naturalHeight
   const offCanvas = document.createElement('canvas')
@@ -130,11 +126,9 @@ async function processDominant(
   offCtx.drawImage(img, 0, 0)
   let imageData = offCtx.getImageData(0, 0, srcW, srcH)
 
-  // 对全图应用亮度/对比度/饱和度
   imageData = applyAdjustments(imageData, s.adjustments.brightness, s.adjustments.contrast, s.adjustments.saturation)
 
-  // 逐像素匹配 + 区域内投票
-  const matchColor = createColorMatcher(palette)
+  const matchColor = createColorMatcher(palette, s.colorMatchMethod)
   const { cells: indexCells, imageCols, imageRows } =
     computeDominantCells(imageData, s.gridCols, s.gridRows, s.keepAspectRatio, matchColor)
 

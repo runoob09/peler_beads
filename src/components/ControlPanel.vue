@@ -44,13 +44,21 @@ const emit = defineEmits<{
       @remove-color="emit('remove-color', $event)"
     />
     <div class="scheme-section">
-      <label class="label">色彩映射</label>
+      <label class="label">色彩计算</label>
       <select
-        :value="settings.colorMatchScheme"
-        @change="emit('update:settings', { ...settings, colorMatchScheme: ($event.target as HTMLSelectElement).value as any })"
+        :value="settings.colorCalcMethod"
+        @change="emit('update:settings', { ...settings, colorCalcMethod: ($event.target as HTMLSelectElement).value as any })"
       >
         <option value="average">平均色彩</option>
         <option value="dominant">主导色彩</option>
+      </select>
+      <label class="label" style="margin-top:8px">映射方式</label>
+      <select
+        :value="settings.colorMatchMethod"
+        @change="emit('update:settings', { ...settings, colorMatchMethod: ($event.target as HTMLSelectElement).value as any })"
+      >
+        <option value="deltaE">Delta E (感知)</option>
+        <option value="rgb">RGB 距离</option>
       </select>
     </div>
 

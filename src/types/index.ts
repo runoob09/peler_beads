@@ -22,7 +22,8 @@ export interface BeadGrid {
 }
 
 export type RenderMode = 'color' | 'symbol' | 'mixed'
-export type ColorMatchScheme = 'average' | 'dominant'
+export type ColorCalcMethod = 'average' | 'dominant'
+export type ColorMatchMethod = 'deltaE' | 'rgb'
 
 export interface AdjustmentSettings {
   brightness: number
@@ -44,7 +45,8 @@ export interface BeadSettings {
   gridCols: number
   gridRows: number
   keepAspectRatio: boolean
-  colorMatchScheme: ColorMatchScheme
+  colorCalcMethod: ColorCalcMethod
+  colorMatchMethod: ColorMatchMethod
   adjustments: AdjustmentSettings
   display: DisplaySettings
 }
