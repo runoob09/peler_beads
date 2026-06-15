@@ -59,6 +59,14 @@ const emit = defineEmits<{
         />
         <span class="val">{{ settings.bucketLevels }}</span>
       </div>
+      <div v-if="settings.colorCalcMethod === 'dominant'" class="slider-row">
+        <span class="slider-label">容差</span>
+        <input
+          type="range" min="5" max="100" :value="settings.tolerance"
+          @input="emit('update:settings', { ...settings, tolerance: Number(($event.target as HTMLInputElement).value) })"
+        />
+        <span class="val">{{ settings.tolerance }}</span>
+      </div>
       <label class="label" style="margin-top:8px">映射方式</label>
       <select
         :value="settings.colorMatchMethod"

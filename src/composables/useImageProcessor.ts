@@ -166,32 +166,30 @@ function averageBlock(
   }
 }
 
-export interface DominantCellsResult {
-  cells: (number | null)[][] // palette index or null
-  imageCols: number
-  imageRows: number
-  imageX: number
-  imageY: number
-}
-
 /**
- * 主导色彩映射：对每个格子区域内的所有像素做调色板匹配，
- * 统计出现次数最多的调色板颜色作为该格子的代表色。
- * 需先对原图应用亮度/对比度/饱和度调整后再调用。
+ * 主导色彩（容差众数）：对区域内像素做 RGB 距离容差聚类，
+ * 取最大聚类的中心色作为代表色。返回 RGB 值，后续由 pipeline 做调整和匹配。
  */
 export function computeDominantCells(
-  imageData: ImageData,
+  source: HTMLImageElement,
   gridCols: number,
   gridRows: number,
   keepAspectRatio: boolean,
-  matchColor: (r: number, g: number, b: number) => { index: number },
-): DominantCellsResult {
-  const data = imageData.data
-  const srcW = imageData.width
-  const srcH = imageData.height
+  tolerance: number,
+): AverageCellsResult {
+  const srcW = source.naturalWidth
+  const srcH = source.naturalHeight
 
-  const cells: (number | null)[][] = Array.from({ length: gridRows }, () =>
-    Array.from({ length: gridCols }, () => null as number | null),
+  const offCanvas = document.createElement('canvas')
+  offCanvas.width = srcW
+  offCanvas.height = srcH
+  const offCtx = offCanvas.getContext('2d')!
+  offCtx.drawImage(source, 0, 0)
+  const imageData = offCtx.getImageData(0, 0, srcW, srcH)
+  const data = imageData.data
+
+  const cells: AverageBlockResult[][] = Array.from({ length: gridRows }, () =>
+    Array.from({ length: gridCols }, () => ({ r: 0, g: 0, b: 0, a: 0 })),
   )
 
   let imageCols: number, imageRows: number, imageX: number, imageY: number
@@ -208,7 +206,7 @@ export function computeDominantCells(
       for (let col = 0; col < gridCols; col++) {
         const x1 = Math.floor((col * srcW) / gridCols)
         const x2 = Math.floor(((col + 1) * srcW) / gridCols)
-        cells[row][col] = dominantBlock(data, srcW, x1, x2, y1, y2, srcH, matchColor)
+        cells[row][col] = toleranceDominantBlock(data, srcW, x1, x2, y1, y2, srcH, tolerance)
       }
     }
   } else {
@@ -224,7 +222,7 @@ export function computeDominantCells(
       for (let c = 0; c < imageCols; c++) {
         const x1 = Math.floor((c * srcW) / imageCols)
         const x2 = Math.floor(((c + 1) * srcW) / imageCols)
-        cells[imageY + r][imageX + c] = dominantBlock(data, srcW, x1, x2, y1, y2, srcH, matchColor)
+        cells[imageY + r][imageX + c] = toleranceDominantBlock(data, srcW, x1, x2, y1, y2, srcH, tolerance)
       }
     }
   }
@@ -232,40 +230,65 @@ export function computeDominantCells(
   return { cells, imageCols, imageRows, imageX, imageY }
 }
 
-function dominantBlock(
+interface Cluster {
+  r: number; g: number; b: number; count: number
+}
+
+function toleranceDominantBlock(
   data: Uint8ClampedArray,
   stride: number,
-  x1: number,
-  x2: number,
-  y1: number,
-  y2: number,
+  x1: number, x2: number, y1: number, y2: number,
   srcH: number,
-  matchColor: (r: number, g: number, b: number) => { index: number },
-): number | null {
-  const counts = new Map<number, number>()
-  let maxCount = 0
-  let bestIndex: number | null = null
+  tolerance: number,
+): AverageBlockResult {
+  const clusters: Cluster[] = []
 
   const sx = Math.max(0, x1)
   const ex = Math.min(stride, x2)
   const sy = Math.max(0, y1)
   const ey = Math.min(y2, srcH)
+  const tol2 = tolerance * tolerance
 
   for (let y = sy; y < ey; y++) {
     for (let x = sx; x < ex; x++) {
       const idx = (y * stride + x) * 4
-      if (data[idx + 3] === 0) continue // skip transparent
-      const match = matchColor(data[idx], data[idx + 1], data[idx + 2])
-      const count = (counts.get(match.index) ?? 0) + 1
-      counts.set(match.index, count)
-      if (count > maxCount) {
-        maxCount = count
-        bestIndex = match.index
+      if (data[idx + 3] === 0) continue
+
+      const pr = data[idx], pg = data[idx + 1], pb = data[idx + 2]
+      let bestCluster = -1
+      let bestDist = Infinity
+
+      for (let i = 0; i < clusters.length; i++) {
+        const c = clusters[i]
+        const dr = pr - c.r, dg = pg - c.g, db = pb - c.b
+        const dist = dr * dr + dg * dg + db * db
+        if (dist < tol2 && dist < bestDist) {
+          bestDist = dist
+          bestCluster = i
+        }
+      }
+
+      if (bestCluster >= 0) {
+        const c = clusters[bestCluster]
+        // running average
+        c.r = Math.round((c.r * c.count + pr) / (c.count + 1))
+        c.g = Math.round((c.g * c.count + pg) / (c.count + 1))
+        c.b = Math.round((c.b * c.count + pb) / (c.count + 1))
+        c.count++
+      } else {
+        clusters.push({ r: pr, g: pg, b: pb, count: 1 })
       }
     }
   }
 
-  return bestIndex
+  if (clusters.length === 0) return { r: 0, g: 0, b: 0, a: 0 }
+
+  let best = clusters[0]
+  for (let i = 1; i < clusters.length; i++) {
+    if (clusters[i].count > best.count) best = clusters[i]
+  }
+
+  return { r: best.r, g: best.g, b: best.b, a: 255 }
 }
 
 // ---- 色桶（Bucket）色彩计算 ----

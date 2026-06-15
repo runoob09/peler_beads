@@ -48,6 +48,7 @@ export interface BeadSettings {
   colorCalcMethod: ColorCalcMethod
   colorMatchMethod: ColorMatchMethod
   bucketLevels: number
+  tolerance: number
   adjustments: AdjustmentSettings
   display: DisplaySettings
 }

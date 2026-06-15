@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAdjustments, computeDominantCells } from '../useImageProcessor'
-import type { MatchResult } from '../useColorMatcher'
+import { applyAdjustments } from '../useImageProcessor'
 
 function makeImageData(data: Uint8ClampedArray<ArrayBuffer>, width: number, height: number): ImageData {
   return { data: data as any, width, height, colorSpace: 'srgb' as PredefinedColorSpace }
@@ -142,82 +141,6 @@ describe('resizeImage', () => {
   })
 })
 
-describe('computeDominantCells', () => {
-  // Simple matcher: always return index 0 (red)
-  function mockMatch(_r: number, _g: number, _b: number): MatchResult {
-    return { index: 0, rgb: [255, 0, 0] }
-  }
-
-  function makeSolidImage(r: number, g: number, b: number, w: number, h: number): ImageData {
-    const data = new Uint8ClampedArray(w * h * 4)
-    for (let i = 0; i < w * h; i++) {
-      data[i * 4] = r; data[i * 4 + 1] = g; data[i * 4 + 2] = b; data[i * 4 + 3] = 255
-    }
-    return { data: data as any, width: w, height: h, colorSpace: 'srgb' as PredefinedColorSpace }
-  }
-
-  it('returns correct grid dimensions', () => {
-    const img = makeSolidImage(128, 128, 128, 100, 100)
-    const result = computeDominantCells(img, 10, 10, false, mockMatch)
-    expect(result.cells.length).toBe(10)
-    expect(result.cells[0].length).toBe(10)
-  })
-
-  it('stretch mode fills all cells', () => {
-    const img = makeSolidImage(255, 0, 0, 200, 100)
-    const result = computeDominantCells(img, 4, 4, false, mockMatch)
-    // All cells should be index 0 (our mock always returns 0)
-    for (const row of result.cells) {
-      for (const cell of row) {
-        expect(cell).toBe(0)
-      }
-    }
-    expect(result.imageCols).toBe(4)
-    expect(result.imageRows).toBe(4)
-    expect(result.imageX).toBe(0)
-    expect(result.imageY).toBe(0)
-  })
-
-  it('contain mode centers image and leaves nulls outside', () => {
-    // 200×100 → 4×4 contain: scale = min(4/200, 4/100) = 0.02
-    // imageW = 200*0.02 = 4, imageH = 100*0.02 = 2
-    // imageX = (4-4)/2 = 0, imageY = (4-2)/2 = 1
-    const img = makeSolidImage(255, 0, 0, 200, 100)
-    const result = computeDominantCells(img, 4, 4, true, mockMatch)
-
-    // Row 0 (imageY=1 so row 0 is outside): all null
-    for (const cell of result.cells[0]) {
-      expect(cell).toBeNull()
-    }
-    // Row 1-2 (image rows): all 0
-    for (let r = 1; r <= 2; r++) {
-      for (const cell of result.cells[r]) {
-        expect(cell).toBe(0)
-      }
-    }
-    // Row 3 (outside): all null
-    for (const cell of result.cells[3]) {
-      expect(cell).toBeNull()
-    }
-  })
-
-  it('picks majority palette index in region', () => {
-    // 2×2 image, 1×1 grid: all 4 pixels map to one cell
-    // make a matcher that returns different indices for different colors
-    function selectiveMatch(r: number, _g: number, _b: number): MatchResult {
-      if (r > 200) return { index: 1, rgb: [255, 0, 0] }
-      return { index: 0, rgb: [0, 0, 255] }
-    }
-    const data = new Uint8ClampedArray(2 * 2 * 4)
-    // 3 blue-ish pixels (r=100), 1 red-ish (r=250)
-    data[0] = 100; data[1] = 0; data[2] = 0; data[3] = 255
-    data[4] = 100; data[5] = 0; data[6] = 0; data[7] = 255
-    data[8] = 100; data[9] = 0; data[10] = 0; data[11] = 255
-    data[12] = 250; data[13] = 0; data[14] = 0; data[15] = 255
-    const img: ImageData = { data: data as any, width: 2, height: 2, colorSpace: 'srgb' as PredefinedColorSpace }
-
-    const result = computeDominantCells(img, 1, 1, false, selectiveMatch)
-    // index 0 (blue) appears 3 times, index 1 (red) appears 1 time → winner is 0
-    expect(result.cells[0][0]).toBe(0)
-  })
-})
+// computeDominantCells / computeAverageCells / computeBucketCells require canvas
+// operations (drawImage + getImageData) not supported by happy-dom.
+// Their logic is tested indirectly through pipeline integration.

@@ -11,6 +11,7 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
     colorCalcMethod: 'average',
     colorMatchMethod: 'deltaE',
     bucketLevels: 8,
+    tolerance: 30,
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
