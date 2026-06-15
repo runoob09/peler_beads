@@ -226,9 +226,11 @@ export function renderExportCanvas(
       ctx.fillStyle = color.hex
       ctx.fillRect(x, y, cellSize, cellSize)
 
-      // Color label inside cell — centered
+      // Color label inside cell — large at 10-multiples, small elsewhere
       const label = getColorLabel(color)
-      const fontSize = cellSize * 0.35
+      const large = col % 10 === 0 && row % 10 === 0
+      const baseSize = cellSize * 0.5
+      const fontSize = large ? baseSize : baseSize * 0.6
       ctx.font = `bold ${fontSize}px monospace`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
