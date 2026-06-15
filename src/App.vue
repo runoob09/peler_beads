@@ -7,6 +7,7 @@ import { usePalette } from './composables/usePalette'
 import { useBeadPipeline } from './composables/useBeadPipeline'
 import { exportPNG, downloadBlob } from './composables/useExport'
 import { generatePdf } from './utils/exportPdf'
+import { extractFromPng, extractFromPdf } from './utils/embedMetadata'
 import type { BeadSettings, ProjectFile, ExportConfig } from './types'
 
 const { brandNames, palette, selectedBrand, selectBrand, addCustomColor, removeColor } = usePalette()
@@ -50,12 +51,31 @@ async function onExport(config: ExportConfig) {
     boldGridWidth: config.boldGridWidth,
   }
 
+  // Build project data for embedding
+  const projectJson = JSON.stringify({
+    version: 1,
+    settings: settings.value,
+    palette: {
+      brand: selectedBrand.value,
+      colors: palette.value.filter(c => c.brand !== 'custom'),
+      custom: palette.value.filter(c => c.brand === 'custom'),
+    },
+  })
+
+  // Get original image bytes
+  let imageBytes: Uint8Array | undefined
+  if (imageFile.value) {
+    const buf = await imageFile.value.arrayBuffer()
+    imageBytes = new Uint8Array(buf)
+  }
+
   if (config.format === 'png') {
-    const blob = await exportPNG(beadGrid.value, gridLines, config.cellSize)
+    const blob = await exportPNG(beadGrid.value, gridLines, config.cellSize, projectJson, imageBytes)
     downloadBlob(blob, `${config.filename}.png`)
   } else {
     const pdfBytes = await generatePdf(
       beadGrid.value, gridLines, config.cellSize, config.filename,
+      projectJson, imageBytes, imageFile.value?.type,
     )
     downloadBlob(new Blob([pdfBytes as any], { type: 'application/pdf' }), `${config.filename}.pdf`)
   }
@@ -87,6 +107,48 @@ function onSaveProject(includeImage: boolean) {
   } else {
     downloadBlob(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }), project.meta.name + '.beads.json')
   }
+}
+
+async function onImportFromDrawing() {
+  const input = document.createElement('input')
+  input.type = 'file'
+  input.accept = '.png,.pdf,image/png,application/pdf'
+  input.onchange = async () => {
+    const file = input.files?.[0]
+    if (!file) return
+
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      const isPng = file.type === 'image/png' || file.name.endsWith('.png')
+      const result = isPng ? extractFromPng(bytes) : await extractFromPdf(bytes)
+
+      if (!result.projectJson) {
+        alert('该文件中未找到项目数据')
+        return
+      }
+
+      const project = JSON.parse(result.projectJson)
+      if (project.settings) {
+        settings.value = { ...settings.value, ...project.settings }
+      }
+      if (project.palette) {
+        selectBrand(project.palette.brand || '')
+        // Wait for brand palette to load
+        await new Promise(r => setTimeout(r, 100))
+        for (const c of project.palette.custom || []) {
+          addCustomColor({ hex: c.hex, name: c.name })
+        }
+      }
+      if (result.imageBytes && result.imageBytes.length > 0) {
+        const blob = new Blob([result.imageBytes as unknown as BlobPart], { type: file.type || 'image/png' })
+        imageFile.value = new File([blob], 'restored.png', { type: blob.type })
+        triggerProcess()
+      }
+    } catch (e) {
+      alert('无法解析该文件：' + (e instanceof Error ? e.message : '未知错误'))
+    }
+  }
+  input.click()
 }
 
 function onLoadProject() {
@@ -130,6 +192,7 @@ function onLoadProject() {
       @export="onExport"
       @save-project="onSaveProject"
       @load-project="onLoadProject"
+      @import-drawing="onImportFromDrawing"
     />
     <div class="preview-wrapper">
       <div v-if="error" class="error-banner">{{ error }}</div>

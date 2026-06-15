@@ -14,6 +14,7 @@ const emit = defineEmits<{
   'export': [config: ExportConfig]
   'save-project': [withImage: boolean]
   'load-project': []
+  'import-drawing': []
 }>()
 
 const showModal = ref(false)
@@ -25,6 +26,7 @@ const showModal = ref(false)
     <button class="btn save-btn" :disabled="!hasGrid" @click="$emit('save-project', true)">保存项目</button>
     <button class="btn save-btn" :disabled="!hasGrid" @click="$emit('save-project', false)">保存项目（不含图片）</button>
     <button class="btn load-btn" @click="$emit('load-project')">加载项目</button>
+    <button class="btn load-btn" @click="$emit('import-drawing')">从图纸恢复</button>
 
     <hr class="divider" />
 

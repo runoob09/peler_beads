@@ -1,6 +1,7 @@
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import type { BeadGrid } from '../types'
 import { renderGridToCanvas } from '../composables/useExport'
+import { embedInPdf } from './embedMetadata'
 
 interface GridLineSettings {
   showGrid: boolean
@@ -16,6 +17,9 @@ export async function generatePdf(
   gridLines: GridLineSettings,
   cellSize: number,
   title: string,
+  projectJson?: string,
+  imageBytes?: Uint8Array,
+  imageType?: string,
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create()
   const font = await doc.embedFont(StandardFonts.Helvetica)
@@ -74,5 +78,10 @@ export async function generatePdf(
     }
   }
 
-  return doc.save()
+  const pdfBytes = new Uint8Array(await doc.save())
+
+  if (projectJson) {
+    return embedInPdf(pdfBytes, projectJson, imageBytes, imageType)
+  }
+  return pdfBytes
 }

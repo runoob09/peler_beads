@@ -1,4 +1,5 @@
 import type { BeadGrid, PaletteColor, RenderMode } from '../types'
+import { embedInPng } from '../utils/embedMetadata'
 
 export interface GridLineSettings {
   showGrid: boolean
@@ -310,14 +311,21 @@ export async function exportPNG(
   grid: BeadGrid,
   gridLines: GridLineSettings,
   cellSize: number,
+  projectJson?: string,
+  imageBytes?: Uint8Array,
 ): Promise<Blob> {
   const canvas = renderExportCanvas(grid, cellSize, gridLines, 2)
-  return new Promise((resolve, reject) => {
+  const pngBlob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob(blob => {
       if (blob) resolve(blob)
       else reject(new Error('Canvas toBlob failed'))
     }, 'image/png')
   })
+
+  if (projectJson) {
+    return embedInPng(pngBlob, projectJson, imageBytes)
+  }
+  return pngBlob
 }
 
 export function downloadBlob(blob: Blob, filename: string) {

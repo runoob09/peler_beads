@@ -21,6 +21,7 @@ const emit = defineEmits<{
   'export': [config: ExportConfig]
   'save-project': [withImage: boolean]
   'load-project': []
+  'import-drawing': []
 }>()
 </script>
 
@@ -112,6 +113,7 @@ const emit = defineEmits<{
       @export="config => emit('export', config)"
       @save-project="emit('save-project', $event)"
       @load-project="emit('load-project')"
+      @import-drawing="emit('import-drawing')"
     />
   </aside>
 </template>
