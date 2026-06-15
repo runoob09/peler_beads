@@ -191,11 +191,11 @@ export function renderExportCanvas(
   }
 
   // --- Row headers ---
-  ctx.textAlign = 'right'
+  ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   for (let row = 0; row < grid.rows; row++) {
     const y = originY + row * cellSize + cellSize / 2
-    ctx.fillText(String(row + 1), originX - 4, y)
+    ctx.fillText(String(row + 1), originX - MARGIN / 2, y)
   }
 
   // --- Header border lines ---
