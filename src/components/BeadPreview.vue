@@ -369,7 +369,7 @@ watch(
   z-index: 1;
 }
 .swatch-code {
-  font-size: 11px;
+  font-size: 16px;
   font-family: monospace;
   font-weight: 700;
   text-align: center;
