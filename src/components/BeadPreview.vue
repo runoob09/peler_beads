@@ -2,10 +2,12 @@
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { useBeadStore } from '../stores/beadStore'
 import { useBrushStore } from '../stores/brushStore'
+import { usePaletteStore } from '../stores/paletteStore'
 import { renderGridToCanvas } from '../composables/useExport'
 
 const beadStore = useBeadStore()
 const brushStore = useBrushStore()
+const paletteStore = usePaletteStore()
 
 const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
@@ -31,6 +33,22 @@ const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
 const cursorStyle = computed(() => {
   return brushStore.brushMode ? 'crosshair' : 'default'
+})
+
+function swatchTextColor(hex: string): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.53 ? '#1a1a2e' : '#ffffff'
+}
+
+function swatchLabel(name: string, hex: string): string {
+  return name.split(/[\s_]+/)[0] || hex
+}
+
+// Floating palette for brush mode
+const paletteColors = computed(() => {
+  return paletteStore.palette.map((c, i) => ({ ...c, index: i }))
 })
 
 function clampZoom(z: number): number {
@@ -247,6 +265,23 @@ watch(
       </div>
       <div class="zoom-indicator">{{ zoomPercent }}%</div>
       <div class="grid-info">{{ beadStore.beadGrid.rows }} × {{ beadStore.beadGrid.cols }} · {{ beadStore.beadGrid.palette.length }} 色</div>
+
+      <!-- Floating brush palette -->
+      <div v-if="brushStore.brushMode" class="brush-palette">
+        <div class="brush-palette-scroll">
+          <div
+            v-for="c in paletteColors"
+            :key="c.index"
+            class="brush-palette-swatch"
+            :class="{ active: brushStore.activeColorIndex === c.index }"
+            :style="{ background: c.hex, color: swatchTextColor(c.hex) }"
+            :title="c.name || c.hex"
+            @click="brushStore.setActiveColor(c.index)"
+          >
+            <span class="swatch-label">{{ swatchLabel(c.name, c.hex) }}</span>
+          </div>
+        </div>
+      </div>
     </template>
     <div v-if="!beadStore.beadGrid && beadStore.progress === 0" class="empty-state"><p>上传图片开始</p></div>
   </div>
@@ -276,5 +311,57 @@ watch(
 }
 .progress-text {
   margin-top: 10px; font-size: 13px; color: var(--text, #6b6375); font-family: var(--mono, monospace);
+}
+
+.brush-palette {
+  margin-top: 8px;
+  max-width: 90%;
+  background: color-mix(in srgb, var(--bg, #fff) 97%, var(--text, #6b6375));
+  border: 1px solid var(--border, #e5e4e7);
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+.brush-palette-scroll {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 120px;
+  overflow-y: auto;
+  justify-content: center;
+}
+.brush-palette-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: border-color 0.15s, transform 0.15s;
+  position: relative;
+}
+.brush-palette-swatch:hover {
+  transform: scale(1.2);
+  z-index: 1;
+}
+.brush-palette-swatch.active {
+  border-color: var(--accent, #aa3bff);
+  box-shadow: 0 0 0 2px var(--accent, #aa3bff);
+  transform: scale(1.15);
+  z-index: 1;
+}
+.swatch-label {
+  font-size: 7px;
+  font-family: monospace;
+  font-weight: 700;
+  pointer-events: none;
+  text-align: center;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 24px;
 }
 </style>
