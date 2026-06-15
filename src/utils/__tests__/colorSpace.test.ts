@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rgbToLab, hexToRgb, deltaE, rgbToHex } from '../colorSpace'
+import { rgbToLab, hexToRgb, deltaE, rgbToHex, rgbDistance, weightedRgbDistance } from '../colorSpace'
 
 describe('hexToRgb', () => {
   it('converts #FFFFFF to [255, 255, 255]', () => {
@@ -67,5 +67,28 @@ describe('deltaE', () => {
     const red1 = rgbToLab(255, 0, 0)
     const red2 = rgbToLab(254, 0, 0)
     expect(deltaE(red1, red2)).toBeLessThan(2)
+  })
+})
+
+describe('rgbDistance', () => {
+  it('returns 0 for identical colors', () => {
+    expect(rgbDistance([255, 0, 0], [255, 0, 0])).toBe(0)
+  })
+
+  it('returns large value for black vs white', () => {
+    const d = rgbDistance([0, 0, 0], [255, 255, 255])
+    expect(d).toBeGreaterThan(400)
+  })
+})
+
+describe('weightedRgbDistance', () => {
+  it('returns 0 for identical colors', () => {
+    expect(weightedRgbDistance([128, 128, 128], [128, 128, 128])).toBe(0)
+  })
+
+  it('green diff weighs more than blue diff', () => {
+    const dGreen = weightedRgbDistance([0, 200, 0], [0, 0, 0])
+    const dBlue = weightedRgbDistance([0, 0, 200], [0, 0, 0])
+    expect(dGreen).toBeGreaterThan(dBlue)
   })
 })

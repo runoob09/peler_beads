@@ -57,6 +57,22 @@ export function rgbToLab(r: number, g: number, b: number): LAB {
   return [L, a, bVal]
 }
 
+// Euclidean distance in RGB space
+export function rgbDistance(rgb1: RGB, rgb2: RGB): number {
+  const dr = rgb1[0] - rgb2[0]
+  const dg = rgb1[1] - rgb2[1]
+  const db = rgb1[2] - rgb2[2]
+  return Math.sqrt(dr * dr + dg * dg + db * db)
+}
+
+// Weighted RGB distance (luminance perception weights)
+export function weightedRgbDistance(rgb1: RGB, rgb2: RGB): number {
+  const dr = (rgb1[0] - rgb2[0]) * 0.299
+  const dg = (rgb1[1] - rgb2[1]) * 0.587
+  const db = (rgb1[2] - rgb2[2]) * 0.114
+  return Math.sqrt(dr * dr + dg * dg + db * db)
+}
+
 export function deltaE(lab1: LAB, lab2: LAB): number {
   const [L1, a1, b1] = lab1
   const [L2, a2, b2] = lab2

@@ -69,4 +69,43 @@ describe('createColorMatcher', () => {
     const result = match(255, 0, 0)
     expect(result.rgb).toEqual([255, 0, 0])
   })
+
+  describe('rgb scheme', () => {
+    it('matches pure red to red in palette', () => {
+      const palette: TestColor[] = [
+        makeColor('#FFFFFF', 'White'),
+        makeColor('#000000', 'Black'),
+        makeColor('#FF0000', 'Red'),
+        makeColor('#0000FF', 'Blue'),
+      ]
+      const match = createColorMatcher(palette, 'rgb')
+      const result = match(255, 0, 0)
+      expect(result.index).toBe(2)
+    })
+
+    it('matches dark gray closer to black than white', () => {
+      const palette: TestColor[] = [
+        makeColor('#FFFFFF', 'White'),
+        makeColor('#000000', 'Black'),
+        makeColor('#FF0000', 'Red'),
+      ]
+      const match = createColorMatcher(palette, 'rgb')
+      const result = match(30, 30, 30)
+      expect(result.index).toBe(1) // closer to black
+    })
+  })
+
+  describe('weightedRgb scheme', () => {
+    it('matches pure green to green', () => {
+      const palette: TestColor[] = [
+        makeColor('#FFFFFF', 'White'),
+        makeColor('#000000', 'Black'),
+        makeColor('#00FF00', 'Green'),
+        makeColor('#0000FF', 'Blue'),
+      ]
+      const match = createColorMatcher(palette, 'weightedRgb')
+      const result = match(0, 255, 0)
+      expect(result.index).toBe(2)
+    })
+  })
 })

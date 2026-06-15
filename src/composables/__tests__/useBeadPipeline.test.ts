@@ -8,6 +8,7 @@ function makeSettings(overrides?: Partial<BeadSettings>): BeadSettings {
     gridCols: 10,
     gridRows: 10,
     keepAspectRatio: true,
+    colorMatchScheme: 'deltaE',
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,

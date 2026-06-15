@@ -12,6 +12,7 @@ export function useBeadPipeline() {
     gridCols: 29,
     gridRows: 29,
     keepAspectRatio: true,
+    colorMatchScheme: 'deltaE',
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
@@ -66,7 +67,7 @@ export function useBeadPipeline() {
       progress.value = 80
 
       // Nearest-neighbor color matching
-      const matchColor = createColorMatcher(palette)
+      const matchColor = createColorMatcher(palette, s.colorMatchScheme)
       const { data: imgBytes, width: imgW, height: imgH } = imageData
       const cells: BeadCell[][] = Array.from({ length: imgH }, () => [])
       for (let row = 0; row < imgH; row++) {
