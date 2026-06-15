@@ -29,7 +29,7 @@ export const useBrushStore = defineStore('brush', () => {
   }
 
   function setActiveColor(index: number) {
-    activeColorIndex.value = index
+    activeColorIndex.value = activeColorIndex.value === index ? null : index
   }
 
   function paintCell(row: number, col: number): boolean {

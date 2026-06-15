@@ -88,6 +88,21 @@ describe('brushStore', () => {
       brush.setActiveColor(2)
       expect(brush.activeColorIndex).toBe(2)
     })
+
+    it('toggles off when clicking the same color again', () => {
+      const brush = useBrushStore()
+      brush.setActiveColor(2)
+      expect(brush.activeColorIndex).toBe(2)
+      brush.setActiveColor(2)
+      expect(brush.activeColorIndex).toBeNull()
+    })
+
+    it('switches to a different color when clicking another', () => {
+      const brush = useBrushStore()
+      brush.setActiveColor(2)
+      brush.setActiveColor(1)
+      expect(brush.activeColorIndex).toBe(1)
+    })
   })
 
   describe('paintCell', () => {
