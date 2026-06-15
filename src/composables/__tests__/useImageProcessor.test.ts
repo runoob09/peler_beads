@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyAdjustments, posterize } from '../useImageProcessor'
+import { applyAdjustments } from '../useImageProcessor'
 
 function makeImageData(data: Uint8ClampedArray<ArrayBuffer>, width: number, height: number): ImageData {
   return { data: data as any, width, height, colorSpace: 'srgb' as PredefinedColorSpace }
@@ -84,42 +84,6 @@ describe('applyAdjustments', () => {
     // Light pixel: (192-128)*2+128 = 64*2+128 = 256 → clamped to 255
     expect(result.data[0]).toBe(0)
     expect(result.data[4]).toBe(255)
-  })
-})
-
-describe('posterize', () => {
-  it('reduces colors to discrete levels', () => {
-    const data = new Uint8ClampedArray(16)
-    // 4 pixels with gradient-like values
-    data[0] = 0;   data[1] = 0;   data[2] = 0;   data[3] = 255
-    data[4] = 40;  data[5] = 40;  data[6] = 40;  data[7] = 255
-    data[8] = 200; data[9] = 200; data[10] = 200; data[11] = 255
-    data[12] = 255; data[13] = 255; data[14] = 255; data[15] = 255
-    const imageData = makeImageData(data, 2, 2)
-    const result = posterize(imageData, 6)
-    // With 6 levels, step = 51
-    // 40/51 ≈ 0.78 → round to 1 → 1*51 = 51
-    // 200/51 ≈ 3.92 → round to 4 → 4*51 = 204
-    expect(result.data[0]).toBe(0)
-    expect(result.data[4]).toBe(51)
-    expect(result.data[8]).toBe(204)
-    expect(result.data[12]).toBe(255)
-  })
-
-  it('preserves alpha channel', () => {
-    const data = new Uint8ClampedArray(4)
-    data[0] = 100; data[1] = 100; data[2] = 100; data[3] = 255
-    const imageData = makeImageData(data, 1, 1)
-    const result = posterize(imageData, 6)
-    expect(result.data[3]).toBe(255)
-  })
-
-  it('returns same dimensions', () => {
-    const data = new Uint8ClampedArray(5 * 3 * 4)
-    const imageData = makeImageData(data, 5, 3)
-    const result = posterize(imageData, 4)
-    expect(result.width).toBe(5)
-    expect(result.height).toBe(3)
   })
 })
 

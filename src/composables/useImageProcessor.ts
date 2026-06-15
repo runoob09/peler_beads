@@ -39,25 +39,6 @@ export function resizeImage(
   if (ctx) ctx.drawImage(source, imageX, imageY, imageW, imageH)
   return { canvas, imageX, imageY, imageW, imageH }
 }
-
-// Posterize image to N levels per channel for cartoon/flat color effect
-// 6 levels → 6×6×6 = 216 buckets, good balance of flatness and detail
-export function posterize(imageData: ImageData, levels: number = 6): ImageData {
-  const result = new ImageData(imageData.width, imageData.height)
-  const step = 255 / (levels - 1)
-
-  for (let i = 0; i < imageData.data.length; i += 4) {
-    for (let c = 0; c < 3; c++) {
-      const v = imageData.data[i + c]
-      const bucket = Math.round(v / step) * step
-      result.data[i + c] = Math.round(Math.max(0, Math.min(255, bucket)))
-    }
-    result.data[i + 3] = imageData.data[i + 3]
-  }
-
-  return result
-}
-
 export async function loadImageFromFile(file: File): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()

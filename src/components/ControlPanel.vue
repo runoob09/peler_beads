@@ -45,13 +45,6 @@ const emit = defineEmits<{
       @add-color="emit('add-color', $event)"
       @remove-color="emit('remove-color', $event)"
     />
-    <div class="mapping-select">
-      <label class="label">映射方案</label>
-      <select :value="settings.colorMapping" @change="$emit('update:settings', { ...settings, colorMapping: ($event.target as HTMLSelectElement).value as any })">
-        <option value="average">平均色彩</option>
-        <option value="cartoon">卡通风格（分桶映射）</option>
-      </select>
-    </div>
     <ColorAdjustments
       :modelValue="settings.adjustments"
       @update:modelValue="emit('update:settings', { ...settings, adjustments: $event })"
@@ -82,10 +75,5 @@ const emit = defineEmits<{
   max-height: 100vh; box-sizing: border-box;
 }
 .title { font-size: 20px; font-weight: 600; color: var(--text-h); margin: 0; }
-.mapping-select { display: flex; flex-direction: column; gap: 4px; }
-.mapping-select select {
-  padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px;
-  font-size: 13px; background: var(--bg); color: var(--text-h);
-}
 .label { font-size: 13px; color: var(--text); font-weight: 500; }
 </style>
