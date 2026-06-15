@@ -20,14 +20,4 @@ describe('PalettePanel', () => {
     expect(wrapper.emitted('select-brand')![0]).toEqual(['Brand-B'])
   })
 
-  it('shows palette color count', () => {
-    const palette = [
-      { id: '1', name: 'Red', hex: '#FF0000', brand: 'test' },
-      { id: '2', name: 'Blue', hex: '#0000FF', brand: 'test' },
-    ]
-    const wrapper = mount(PalettePanel, {
-      props: { brandNames: ['test'], selectedBrand: 'test', palette },
-    })
-    expect(wrapper.text()).toContain('2')
-  })
 })

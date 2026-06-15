@@ -14,7 +14,6 @@ const emit = defineEmits<{
   <div class="palette-panel">
     <label class="label">色板</label>
     <PaletteSelector :modelValue="selectedBrand" :brandNames="brandNames" @update:modelValue="emit('select-brand', $event)" />
-    <div class="color-count">{{ palette.length }} 种颜色</div>
     <PaletteEditor :palette="palette" @remove-color="emit('remove-color', $event)" />
   </div>
 </template>
