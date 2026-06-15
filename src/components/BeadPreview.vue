@@ -257,29 +257,36 @@ watch(
       </div>
     </template>
     <template v-if="beadStore.beadGrid">
-      <div class="preview-canvas-wrap" :style="transformStyle">
-        <canvas ref="canvasRef" :style="{ cursor: cursorStyle }" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="onWheel" @mousedown="onMouseDown" />
-        <div v-if="hoveredColor" class="tooltip" :style="{ left: (panX + (hoveredCell?.col ?? 0) * cellSize * zoom + cellSize * zoom) + 'px', top: (panY + (hoveredCell?.row ?? 0) * cellSize * zoom) + 'px' }">
-          {{ hoveredColor.name || hoveredColor.hex }}
-        </div>
-      </div>
-      <div class="zoom-indicator">{{ zoomPercent }}%</div>
-      <div class="grid-info">{{ beadStore.beadGrid.rows }} × {{ beadStore.beadGrid.cols }} · {{ beadStore.beadGrid.palette.length }} 色</div>
-
-      <!-- Floating brush palette -->
-      <div v-if="brushStore.brushMode" class="brush-palette">
-        <div class="brush-palette-scroll">
-          <div
-            v-for="c in paletteColors"
-            :key="c.index"
-            class="brush-palette-swatch"
-            :class="{ active: brushStore.activeColorIndex === c.index }"
-            :style="{ background: c.hex, color: swatchTextColor(c.hex) }"
-            :title="c.name || c.hex"
-            @click="brushStore.setActiveColor(c.index)"
-          >
-            <span class="swatch-label">{{ swatchLabel(c.name, c.hex) }}</span>
+      <div class="preview-body" :class="{ 'has-palette': brushStore.brushMode }">
+        <!-- Left: brush color card -->
+        <div v-if="brushStore.brushMode" class="brush-palette">
+          <div class="palette-title">色卡</div>
+          <div class="brush-palette-scroll">
+            <div
+              v-for="c in paletteColors"
+              :key="c.index"
+              class="brush-palette-swatch"
+              :class="{ active: brushStore.activeColorIndex === c.index }"
+              :style="{ background: c.hex, color: swatchTextColor(c.hex) }"
+              :title="c.name || c.hex"
+              @click="brushStore.setActiveColor(c.index)"
+            >
+              <span class="swatch-label">{{ swatchLabel(c.name, c.hex) }}</span>
+              <span class="swatch-name">{{ c.name || c.hex }}</span>
+            </div>
           </div>
+        </div>
+
+        <!-- Right: canvas area -->
+        <div class="preview-canvas-area">
+          <div class="preview-canvas-wrap" :style="transformStyle">
+            <canvas ref="canvasRef" :style="{ cursor: cursorStyle }" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="onWheel" @mousedown="onMouseDown" />
+            <div v-if="hoveredColor" class="tooltip" :style="{ left: (panX + (hoveredCell?.col ?? 0) * cellSize * zoom + cellSize * zoom) + 'px', top: (panY + (hoveredCell?.row ?? 0) * cellSize * zoom) + 'px' }">
+              {{ hoveredColor.name || hoveredColor.hex }}
+            </div>
+          </div>
+          <div class="zoom-indicator">{{ zoomPercent }}%</div>
+          <div class="grid-info">{{ beadStore.beadGrid.rows }} × {{ beadStore.beadGrid.cols }} · {{ beadStore.beadGrid.palette.length }} 色</div>
         </div>
       </div>
     </template>
@@ -288,7 +295,21 @@ watch(
 </template>
 
 <style scoped>
-.bead-preview { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; background: var(--bg); position: relative; overflow: hidden; }
+.bead-preview {
+  flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 400px; background: var(--bg); position: relative; overflow: hidden;
+}
+.preview-body {
+  display: flex; align-items: flex-start; justify-content: center; gap: 0;
+  width: 100%; height: 100%;
+}
+.preview-body.has-palette {
+  justify-content: flex-start;
+}
+.preview-canvas-area {
+  display: flex; flex-direction: column; align-items: center;
+  flex: 1; min-width: 0;
+}
 .preview-canvas-wrap { transform-origin: 0 0; }
 .tooltip { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; pointer-events: none; transform: translate(8px, -50%); z-index: 10; }
 .zoom-indicator { margin-top: 8px; font-size: 12px; color: var(--accent, #aa3bff); font-family: var(--mono, monospace); }
@@ -299,12 +320,8 @@ watch(
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   background: var(--bg, #fff); z-index: 20;
 }
-.progress-card {
-  text-align: center; width: 260px;
-}
-.progress-track {
-  height: 8px; background: var(--border, #e5e4e7); border-radius: 4px; overflow: hidden;
-}
+.progress-card { text-align: center; width: 260px; }
+.progress-track { height: 8px; background: var(--border, #e5e4e7); border-radius: 4px; overflow: hidden; }
 .progress-fill {
   height: 100%; background: var(--accent, #aa3bff); border-radius: 4px;
   transition: width 0.25s ease;
@@ -313,55 +330,55 @@ watch(
   margin-top: 10px; font-size: 13px; color: var(--text, #6b6375); font-family: var(--mono, monospace);
 }
 
+/* Left color card */
 .brush-palette {
-  margin-top: 8px;
-  max-width: 90%;
+  flex-shrink: 0;
+  width: 160px;
+  max-height: calc(100vh - 40px);
   background: color-mix(in srgb, var(--bg, #fff) 97%, var(--text, #6b6375));
-  border: 1px solid var(--border, #e5e4e7);
-  border-radius: 8px;
-  padding: 8px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  border-right: 1px solid var(--border, #e5e4e7);
+  display: flex;
+  flex-direction: column;
+}
+.palette-title {
+  font-size: 13px; font-weight: 600; color: var(--text-h);
+  padding: 10px 12px 6px;
+  flex-shrink: 0;
 }
 .brush-palette-scroll {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-height: 120px;
-  overflow-y: auto;
-  justify-content: center;
+  flex: 1; overflow-y: auto;
+  display: flex; flex-direction: column;
+  gap: 2px;
+  padding: 4px 8px 8px;
 }
 .brush-palette-swatch {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
-  border: 1.5px solid transparent;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 2px solid transparent;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: border-color 0.15s, transform 0.15s;
-  position: relative;
+  transition: border-color 0.15s, background 0.15s;
 }
 .brush-palette-swatch:hover {
-  transform: scale(1.2);
-  z-index: 1;
+  filter: brightness(0.95);
 }
 .brush-palette-swatch.active {
   border-color: var(--accent, #aa3bff);
-  box-shadow: 0 0 0 2px var(--accent, #aa3bff);
-  transform: scale(1.15);
-  z-index: 1;
+  box-shadow: 0 0 0 1px var(--accent, #aa3bff);
 }
 .swatch-label {
-  font-size: 7px;
+  font-size: 13px;
   font-family: monospace;
   font-weight: 700;
-  pointer-events: none;
+  min-width: 32px;
   text-align: center;
-  line-height: 1;
+  flex-shrink: 0;
+}
+.swatch-name {
+  font-size: 12px;
+  font-family: system-ui;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 24px;
+  white-space: nowrap;
 }
 </style>
