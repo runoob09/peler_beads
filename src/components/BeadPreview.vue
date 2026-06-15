@@ -1,17 +1,11 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import type { BeadGrid, DisplaySettings, PaletteColor } from '../types'
+import { useBeadStore } from '../stores/beadStore'
+import { useBrushStore } from '../stores/brushStore'
 import { renderGridToCanvas } from '../composables/useExport'
 
-const props = defineProps<{
-  beadGrid: BeadGrid | null
-  display: DisplaySettings
-  progress: number
-}>()
-
-const emit = defineEmits<{
-  'cell-click': [cell: { row: number; col: number; color: PaletteColor }]
-}>()
+const beadStore = useBeadStore()
+const brushStore = useBrushStore()
 
 const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
@@ -26,32 +20,55 @@ const isPanning = ref(false)
 const panStart = ref({ x: 0, y: 0 })
 const panStartPos = ref({ x: 0, y: 0 })
 
+// Brush painting state
+const isPainting = ref(false)
+
 const MIN_ZOOM = 0.25
 const MAX_ZOOM = 4
 const ZOOM_STEP = 0.1
 
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
+const cursorStyle = computed(() => {
+  return brushStore.brushMode ? 'crosshair' : 'default'
+})
+
 function clampZoom(z: number): number {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z))
 }
 
+function getCellFromEvent(event: MouseEvent): { row: number; col: number } | null {
+  if (!canvasRef.value) return null
+  const rect = canvasRef.value.getBoundingClientRect()
+  const x = event.clientX - rect.left
+  const y = event.clientY - rect.top
+  const scaledCell = cellSize.value * zoom.value
+  const col = Math.floor(x / scaledCell)
+  const row = Math.floor(y / scaledCell)
+  const grid = beadStore.beadGrid
+  if (!grid) return null
+  if (row >= 0 && row < grid.rows && col >= 0 && col < grid.cols) {
+    return { row, col }
+  }
+  return null
+}
+
 function render() {
-  if (!canvasRef.value || !props.beadGrid) return
+  if (!canvasRef.value || !beadStore.beadGrid) return
   const container = containerRef.value
   if (!container) return
 
   const maxW = container.clientWidth || 400
   const maxH = container.clientHeight || 400
-  cellSize.value = Math.floor(Math.min(maxW / props.beadGrid.cols, maxH / props.beadGrid.rows))
+  cellSize.value = Math.floor(Math.min(maxW / beadStore.beadGrid.cols, maxH / beadStore.beadGrid.rows))
 
-  const rendered = renderGridToCanvas(props.beadGrid, props.display.renderMode, cellSize.value, {
-    showGrid: props.display.showGrid,
-    gridLineColor: props.display.gridLineColor,
-    gridLineWidth: props.display.gridLineWidth,
-    boldGridInterval: props.display.boldGridInterval,
-    boldGridColor: props.display.boldGridColor,
-    boldGridWidth: props.display.boldGridWidth,
+  const rendered = renderGridToCanvas(beadStore.beadGrid, beadStore.settings.display.renderMode, cellSize.value, {
+    showGrid: beadStore.settings.display.showGrid,
+    gridLineColor: beadStore.settings.display.gridLineColor,
+    gridLineWidth: beadStore.settings.display.gridLineWidth,
+    boldGridInterval: beadStore.settings.display.boldGridInterval,
+    boldGridColor: beadStore.settings.display.boldGridColor,
+    boldGridWidth: beadStore.settings.display.boldGridWidth,
   })
 
   canvasRef.value.width = rendered.width
@@ -63,15 +80,40 @@ function render() {
   ctx.drawImage(rendered, 0, 0)
 }
 
+function onMouseDown(event: MouseEvent) {
+  if (brushStore.brushMode) {
+    isPainting.value = true
+    brushStore.beginStroke()
+    const cell = getCellFromEvent(event)
+    if (cell) {
+      brushStore.continueStroke(cell.row, cell.col)
+      nextTick(render)
+    }
+  } else {
+    onPanStart(event)
+  }
+}
+
 function onMouseMove(event: MouseEvent) {
-  if (!props.beadGrid || !canvasRef.value || isPanning.value) return
+  if (!beadStore.beadGrid || !canvasRef.value) return
+  if (isPainting.value) {
+    const cell = getCellFromEvent(event)
+    if (cell) {
+      hoveredCell.value = cell
+      brushStore.continueStroke(cell.row, cell.col)
+      nextTick(render)
+    }
+    return
+  }
+  if (isPanning.value) return
+  // Existing hover logic
   const rect = canvasRef.value.getBoundingClientRect()
   const x = event.clientX - rect.left
   const y = event.clientY - rect.top
   const scaledCell = cellSize.value * zoom.value
   const col = Math.floor(x / scaledCell)
   const row = Math.floor(y / scaledCell)
-  if (row >= 0 && row < props.beadGrid.rows && col >= 0 && col < props.beadGrid.cols) {
+  if (row >= 0 && row < beadStore.beadGrid.rows && col >= 0 && col < beadStore.beadGrid.cols) {
     hoveredCell.value = { row, col }
   } else {
     hoveredCell.value = null
@@ -82,21 +124,28 @@ function onMouseLeave() {
   hoveredCell.value = null
 }
 
-function onClick() {
-  if (!props.beadGrid || !hoveredCell.value) return
-  const { row, col } = hoveredCell.value
-  const colorIndex = props.beadGrid.cells[row][col].colorIndex
-  if (colorIndex === null) return
-  const color = props.beadGrid.palette[colorIndex]
-  emit('cell-click', { row, col, color })
+function onKeyDown(event: KeyboardEvent) {
+  if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
+    event.preventDefault()
+    if (event.shiftKey) {
+      brushStore.redo()
+    } else {
+      brushStore.undo()
+    }
+    nextTick(render)
+  } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
+    event.preventDefault()
+    brushStore.redo()
+    nextTick(render)
+  }
 }
 
 const hoveredColor = computed(() => {
-  if (!hoveredCell.value || !props.beadGrid) return null
+  if (!hoveredCell.value || !beadStore.beadGrid) return null
   const { row, col } = hoveredCell.value
-  const colorIndex = props.beadGrid.cells[row][col].colorIndex
+  const colorIndex = beadStore.beadGrid.cells[row][col].colorIndex
   if (colorIndex === null) return null
-  return props.beadGrid.palette[colorIndex]
+  return beadStore.beadGrid.palette[colorIndex]
 })
 
 function onWheel(event: WheelEvent) {
@@ -140,7 +189,7 @@ const transformStyle = computed(() => {
 })
 
 const stageLabel = computed(() => {
-  const p = props.progress
+  const p = beadStore.progress
   if (p <= 0) return ''
   if (p <= 25) return '加载图片...'
   if (p <= 45) return '缩放...'
@@ -150,41 +199,56 @@ const stageLabel = computed(() => {
   return '完成'
 })
 
+function onDocumentMouseUp() {
+  if (isPainting.value) {
+    isPainting.value = false
+    brushStore.endStroke()
+    nextTick(render)
+  }
+  onPanEnd()
+}
+
 onMounted(() => {
   nextTick(render)
   document.addEventListener('mousemove', onPanMove)
-  document.addEventListener('mouseup', onPanEnd)
+  document.addEventListener('mouseup', onDocumentMouseUp)
+  document.addEventListener('keydown', onKeyDown)
 })
 onUnmounted(() => {
   document.removeEventListener('mousemove', onPanMove)
-  document.removeEventListener('mouseup', onPanEnd)
+  document.removeEventListener('mouseup', onDocumentMouseUp)
+  document.removeEventListener('keydown', onKeyDown)
 })
-watch(() => [props.beadGrid, props.display], () => { nextTick(render) }, { deep: true })
+watch(
+  () => [beadStore.beadGrid, beadStore.settings.display],
+  () => { nextTick(render) },
+  { deep: true },
+)
 </script>
 
 <template>
   <div ref="containerRef" class="bead-preview">
-    <template v-if="progress > 0">
+    <template v-if="beadStore.progress > 0">
       <div class="progress-overlay">
         <div class="progress-card">
           <div class="progress-track">
-            <div class="progress-fill" :style="{ width: progress + '%' }"></div>
+            <div class="progress-fill" :style="{ width: beadStore.progress + '%' }"></div>
           </div>
-          <div class="progress-text">{{ stageLabel }} {{ progress }}%</div>
+          <div class="progress-text">{{ stageLabel }} {{ beadStore.progress }}%</div>
         </div>
       </div>
     </template>
-    <template v-if="beadGrid">
+    <template v-if="beadStore.beadGrid">
       <div class="preview-canvas-wrap" :style="transformStyle">
-        <canvas ref="canvasRef" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @click="onClick" @wheel="onWheel" @mousedown="onPanStart" />
+        <canvas ref="canvasRef" :style="{ cursor: cursorStyle }" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="onWheel" @mousedown="onMouseDown" />
         <div v-if="hoveredColor" class="tooltip" :style="{ left: (panX + (hoveredCell?.col ?? 0) * cellSize * zoom + cellSize * zoom) + 'px', top: (panY + (hoveredCell?.row ?? 0) * cellSize * zoom) + 'px' }">
           {{ hoveredColor.name || hoveredColor.hex }}
         </div>
       </div>
       <div class="zoom-indicator">{{ zoomPercent }}%</div>
-      <div class="grid-info">{{ beadGrid.rows }} × {{ beadGrid.cols }} · {{ beadGrid.palette.length }} 色</div>
+      <div class="grid-info">{{ beadStore.beadGrid.rows }} × {{ beadStore.beadGrid.cols }} · {{ beadStore.beadGrid.palette.length }} 色</div>
     </template>
-    <div v-if="!beadGrid && progress === 0" class="empty-state"><p>上传图片开始</p></div>
+    <div v-if="!beadStore.beadGrid && beadStore.progress === 0" class="empty-state"><p>上传图片开始</p></div>
   </div>
 </template>
 

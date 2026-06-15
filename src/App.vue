@@ -141,7 +141,7 @@ async function onImportFromDrawing() {
     />
     <div class="preview-wrapper">
       <div v-if="beadStore.error" class="error-banner">{{ beadStore.error }}</div>
-      <BeadPreview :beadGrid="beadStore.beadGrid" :display="beadStore.settings.display" :progress="beadStore.progress" />
+      <BeadPreview />
     </div>
     <ColorLegend :beadGrid="beadStore.beadGrid" />
   </div>
