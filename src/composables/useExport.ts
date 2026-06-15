@@ -160,9 +160,9 @@ export function renderExportCanvas(
     .map(([idx, count]) => ({ paletteIndex: idx, color: grid.palette[idx], count }))
 
   const legendItemH = Math.max(10, cellSize * 0.8)
-  const legendCols = Math.min(8, Math.max(1, Math.floor(gridW / (cellSize * 5))))
+  const legendCols = Math.min(4, Math.max(1, Math.floor(gridW / (cellSize * 12))))
   const legendRows = Math.ceil(sortedColors.length / legendCols)
-  const legendH = legendRows * (legendItemH + 2) + 30
+  const legendH = legendRows * (legendItemH + 4) + 30
 
   const canvasH = MARGIN + gridH + legendH
 
@@ -286,15 +286,16 @@ export function renderExportCanvas(
     const lRow = Math.floor(i / legendCols)
     const item = sortedColors[i]
     const lx = MARGIN + lCol * colWidth
-    const ly = legendStartY + lRow * (legendItemH + 2)
+    const ly = legendStartY + lRow * (legendItemH + 4)
 
-    // Color swatch
-    const swatchSize = legendItemH * 0.7
+    // Color swatch — wider block
+    const swatchW = legendItemH * 1.5
+    const swatchH = legendItemH * 0.9
     ctx.fillStyle = item.color.hex
-    ctx.fillRect(lx, ly, swatchSize, swatchSize)
+    ctx.fillRect(lx, ly, swatchW, swatchH)
     ctx.strokeStyle = '#999999'
     ctx.lineWidth = 0.5
-    ctx.strokeRect(lx, ly, swatchSize, swatchSize)
+    ctx.strokeRect(lx, ly, swatchW, swatchH)
 
     // Color code inside swatch — centered
     const code = getColorLabel(item.color)
@@ -302,14 +303,14 @@ export function renderExportCanvas(
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = getTextColor(item.color.hex)
-    ctx.fillText(code, lx + swatchSize / 2, ly + swatchSize / 2)
+    ctx.fillText(code, lx + swatchW / 2, ly + swatchH / 2)
 
-    // Count to the right
+    // Count to the right of swatch
     ctx.font = `${cellSize * 0.8}px sans-serif`
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`${item.count}`, lx + swatchSize + 4, ly + swatchSize / 2)
+    ctx.fillText(`${item.count}`, lx + swatchW + 6, ly + swatchH / 2)
   }
 
   return canvas
