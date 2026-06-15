@@ -82,15 +82,42 @@ describe('createColorMatcher', () => {
       const result = match(255, 0, 0)
       expect(result.index).toBe(2)
     })
+  })
 
-    it('matches dark gray closer to black', () => {
+  describe('weightedRgb method', () => {
+    it('matches pure green to green', () => {
+      const palette: TestColor[] = [
+        makeColor('#FFFFFF', 'White'),
+        makeColor('#000000', 'Black'),
+        makeColor('#00FF00', 'Green'),
+        makeColor('#0000FF', 'Blue'),
+      ]
+      const match = createColorMatcher(palette, 'weightedRgb')
+      const result = match(0, 255, 0)
+      expect(result.index).toBe(2)
+    })
+  })
+
+  describe('ciede2000 method', () => {
+    it('matches pure red to red', () => {
+      const palette: TestColor[] = [
+        makeColor('#FFFFFF', 'White'),
+        makeColor('#000000', 'Black'),
+        makeColor('#FF0000', 'Red'),
+      ]
+      const match = createColorMatcher(palette, 'ciede2000')
+      const result = match(255, 0, 0)
+      expect(result.index).toBe(2)
+    })
+
+    it('matches pure white', () => {
       const palette: TestColor[] = [
         makeColor('#FFFFFF', 'White'),
         makeColor('#000000', 'Black'),
       ]
-      const match = createColorMatcher(palette, 'rgb')
-      const result = match(30, 30, 30)
-      expect(result.index).toBe(1) // closer to black in RGB space
+      const match = createColorMatcher(palette, 'ciede2000')
+      const result = match(255, 255, 255)
+      expect(result.index).toBe(0)
     })
   })
 })

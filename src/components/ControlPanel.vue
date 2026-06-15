@@ -73,8 +73,10 @@ const emit = defineEmits<{
         :value="settings.colorMatchMethod"
         @change="emit('update:settings', { ...settings, colorMatchMethod: ($event.target as HTMLSelectElement).value as any })"
       >
-        <option value="deltaE">Delta E (感知)</option>
+        <option value="deltaE">Delta E</option>
+        <option value="ciede2000">CIEDE2000</option>
         <option value="rgb">RGB 距离</option>
+        <option value="weightedRgb">加权 RGB</option>
       </select>
     </div>
 

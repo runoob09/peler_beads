@@ -23,7 +23,7 @@ export interface BeadGrid {
 
 export type RenderMode = 'color' | 'symbol' | 'mixed'
 export type ColorCalcMethod = 'average' | 'dominant' | 'bucket' | 'median' | 'centerWeighted'
-export type ColorMatchMethod = 'deltaE' | 'rgb'
+export type ColorMatchMethod = 'deltaE' | 'rgb' | 'weightedRgb' | 'ciede2000'
 
 export interface DisplaySettings {
   showGrid: boolean
