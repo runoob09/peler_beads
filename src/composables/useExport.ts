@@ -179,7 +179,7 @@ export function renderExportCanvas(
 
   // --- Column headers ---
   ctx.fillStyle = '#333333'
-  ctx.font = `bold ${Math.max(6, cellSize * 0.4)}px monospace`
+  ctx.font = `bold ${cellSize * 0.8}px monospace`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   for (let col = 0; col < grid.cols; col++) {
@@ -225,7 +225,7 @@ export function renderExportCanvas(
 
       // Color label inside cell
       const label = getColorLabel(color)
-      const fontSize = Math.max(5, cellSize * 0.35)
+      const fontSize = cellSize * 0.8
       ctx.font = `bold ${fontSize}px monospace`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
@@ -272,15 +272,15 @@ export function renderExportCanvas(
   // --- Legend ---
   const legendY = MARGIN + gridH + 10
   ctx.fillStyle = '#333333'
-  ctx.font = `bold ${Math.max(8, legendItemH * 0.65)}px sans-serif`
+  const legendTitleFontSize = cellSize * 0.8
+  ctx.font = `bold ${legendTitleFontSize}px sans-serif`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   ctx.fillText('颜色图例（按数量降序）', MARGIN, legendY)
 
-  const legendStartY = legendY + Math.max(16, legendItemH * 0.9)
+  const legendStartY = legendY + cellSize * 1.2
   const colWidth = Math.floor((canvasW - MARGIN) / legendCols)
 
-  ctx.font = `${Math.max(7, legendItemH * 0.6)}px sans-serif`
   for (let i = 0; i < sortedColors.length; i++) {
     const lCol = i % legendCols
     const lRow = Math.floor(i / legendCols)
@@ -298,15 +298,14 @@ export function renderExportCanvas(
 
     // Color code inside swatch
     const code = getColorLabel(item.color)
-    const codeFontSize = Math.max(5, swatchSize * 0.55)
-    ctx.font = `bold ${codeFontSize}px monospace`
+    ctx.font = `bold ${cellSize * 0.8}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = getTextColor(item.color.hex)
     ctx.fillText(code, lx + swatchSize / 2, ly + swatchSize / 2)
 
     // Count to the right
-    ctx.font = `${Math.max(7, legendItemH * 0.6)}px sans-serif`
+    ctx.font = `${cellSize * 0.8}px sans-serif`
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
