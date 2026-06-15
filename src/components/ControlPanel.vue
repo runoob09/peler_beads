@@ -48,6 +48,8 @@ const emit = defineEmits<{
         @change="emit('update:settings', { ...settings, colorCalcMethod: ($event.target as HTMLSelectElement).value as any })"
       >
         <option value="average">平均色彩</option>
+        <option value="median">中位色彩</option>
+        <option value="centerWeighted">中心加权</option>
         <option value="dominant">主导色彩</option>
         <option value="bucket">色桶主导</option>
       </select>

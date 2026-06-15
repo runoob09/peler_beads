@@ -22,7 +22,7 @@ export interface BeadGrid {
 }
 
 export type RenderMode = 'color' | 'symbol' | 'mixed'
-export type ColorCalcMethod = 'average' | 'dominant' | 'bucket'
+export type ColorCalcMethod = 'average' | 'dominant' | 'bucket' | 'median' | 'centerWeighted'
 export type ColorMatchMethod = 'deltaE' | 'rgb'
 
 export interface AdjustmentSettings {

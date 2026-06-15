@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import type { BeadGrid, BeadSettings, PaletteColor, BeadCell } from '../types'
-import { loadImageFromFile, computeAverageCells, computeBucketCells, computeDominantCells } from './useImageProcessor'
+import { loadImageFromFile, computeAverageCells, computeBucketCells, computeDominantCells, computeMedianCells, computeCenterWeightedCells } from './useImageProcessor'
 import { createColorMatcher } from './useColorMatcher'
 
 export function useBeadPipeline() {
@@ -55,6 +55,16 @@ export function useBeadPipeline() {
       } else if (s.colorCalcMethod === 'bucket') {
         beadGrid.value = await processRgbCells(
           computeBucketCells(img, s.gridCols, s.gridRows, s.keepAspectRatio, s.bucketLevels),
+          palette, s,
+        )
+      } else if (s.colorCalcMethod === 'median') {
+        beadGrid.value = await processRgbCells(
+          computeMedianCells(img, s.gridCols, s.gridRows, s.keepAspectRatio),
+          palette, s,
+        )
+      } else if (s.colorCalcMethod === 'centerWeighted') {
+        beadGrid.value = await processRgbCells(
+          computeCenterWeightedCells(img, s.gridCols, s.gridRows, s.keepAspectRatio),
           palette, s,
         )
       } else {

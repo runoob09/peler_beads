@@ -291,6 +291,176 @@ function toleranceDominantBlock(
   return { r: best.r, g: best.g, b: best.b, a: 255 }
 }
 
+// ---- 中位色 (Median) 色彩计算 ----
+
+function medianBlock(
+  data: Uint8ClampedArray,
+  stride: number,
+  x1: number, x2: number, y1: number, y2: number,
+  srcH: number,
+): AverageBlockResult {
+  const rs: number[] = [], gs: number[] = [], bs: number[] = []
+
+  const sx = Math.max(0, x1)
+  const ex = Math.min(stride, x2)
+  const sy = Math.max(0, y1)
+  const ey = Math.min(y2, srcH)
+
+  for (let y = sy; y < ey; y++) {
+    for (let x = sx; x < ex; x++) {
+      const idx = (y * stride + x) * 4
+      if (data[idx + 3] === 0) continue
+      rs.push(data[idx])
+      gs.push(data[idx + 1])
+      bs.push(data[idx + 2])
+    }
+  }
+
+  if (rs.length === 0) return { r: 0, g: 0, b: 0, a: 0 }
+  rs.sort((a, b) => a - b)
+  gs.sort((a, b) => a - b)
+  bs.sort((a, b) => a - b)
+  const m = Math.floor(rs.length / 2)
+  return { r: rs[m], g: gs[m], b: bs[m], a: 255 }
+}
+
+/**
+ * 中位色：区域内每个通道独立取中位数，不受极端像素（高光/阴影/噪点）影响。
+ */
+export function computeMedianCells(
+  source: HTMLImageElement,
+  gridCols: number,
+  gridRows: number,
+  keepAspectRatio: boolean,
+): AverageCellsResult {
+  return blockBasedCompute(source, gridCols, gridRows, keepAspectRatio, medianBlock)
+}
+
+// ---- 中心加权 (Center-Weighted) 色彩计算 ----
+
+function centerWeightedBlock(
+  data: Uint8ClampedArray,
+  stride: number,
+  x1: number, x2: number, y1: number, y2: number,
+  srcH: number,
+): AverageBlockResult {
+  const sx = Math.max(0, x1)
+  const ex = Math.min(stride, x2)
+  const sy = Math.max(0, y1)
+  const ey = Math.min(y2, srcH)
+
+  const bw = ex - sx, bh = ey - sy
+  if (bw <= 0 || bh <= 0) return { r: 0, g: 0, b: 0, a: 0 }
+
+  const cx = (sx + ex - 1) / 2
+  const cy = (sy + ey - 1) / 2
+  const halfW = bw / 2, halfH = bh / 2
+
+  let rSum = 0, gSum = 0, bSum = 0, wSum = 0
+
+  for (let y = sy; y < ey; y++) {
+    for (let x = sx; x < ex; x++) {
+      const idx = (y * stride + x) * 4
+      if (data[idx + 3] === 0) continue
+
+      const dx = (x - cx) / halfW
+      const dy = (y - cy) / halfH
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      const weight = Math.exp(-dist * dist * 2) // Gaussian falloff
+
+      rSum += data[idx] * weight
+      gSum += data[idx + 1] * weight
+      bSum += data[idx + 2] * weight
+      wSum += weight
+    }
+  }
+
+  if (wSum === 0) return { r: 0, g: 0, b: 0, a: 0 }
+  return {
+    r: Math.round(rSum / wSum),
+    g: Math.round(gSum / wSum),
+    b: Math.round(bSum / wSum),
+    a: 255,
+  }
+}
+
+/**
+ * 中心加权：距离格子中心越近的像素权重越大（高斯衰减），
+ * 使相邻格子之间的过渡更平滑。
+ */
+export function computeCenterWeightedCells(
+  source: HTMLImageElement,
+  gridCols: number,
+  gridRows: number,
+  keepAspectRatio: boolean,
+): AverageCellsResult {
+  return blockBasedCompute(source, gridCols, gridRows, keepAspectRatio, centerWeightedBlock)
+}
+
+// ---- 通用分块计算框架 ----
+
+type BlockFn = (data: Uint8ClampedArray, stride: number, x1: number, x2: number, y1: number, y2: number, srcH: number) => AverageBlockResult
+
+function blockBasedCompute(
+  source: HTMLImageElement,
+  gridCols: number,
+  gridRows: number,
+  keepAspectRatio: boolean,
+  blockFn: BlockFn,
+): AverageCellsResult {
+  const srcW = source.naturalWidth
+  const srcH = source.naturalHeight
+
+  const offCanvas = document.createElement('canvas')
+  offCanvas.width = srcW
+  offCanvas.height = srcH
+  const offCtx = offCanvas.getContext('2d')!
+  offCtx.drawImage(source, 0, 0)
+  const imageData = offCtx.getImageData(0, 0, srcW, srcH)
+  const data = imageData.data
+
+  const cells: AverageBlockResult[][] = Array.from({ length: gridRows }, () =>
+    Array.from({ length: gridCols }, () => ({ r: 0, g: 0, b: 0, a: 0 })),
+  )
+
+  let imageCols: number, imageRows: number, imageX: number, imageY: number
+
+  if (!keepAspectRatio) {
+    imageCols = gridCols
+    imageRows = gridRows
+    imageX = 0
+    imageY = 0
+
+    for (let row = 0; row < gridRows; row++) {
+      const y1 = Math.floor((row * srcH) / gridRows)
+      const y2 = Math.floor(((row + 1) * srcH) / gridRows)
+      for (let col = 0; col < gridCols; col++) {
+        const x1 = Math.floor((col * srcW) / gridCols)
+        const x2 = Math.floor(((col + 1) * srcW) / gridCols)
+        cells[row][col] = blockFn(data, srcW, x1, x2, y1, y2, srcH)
+      }
+    }
+  } else {
+    const scale = Math.min(gridCols / srcW, gridRows / srcH)
+    imageCols = Math.round(srcW * scale)
+    imageRows = Math.round(srcH * scale)
+    imageX = Math.floor((gridCols - imageCols) / 2)
+    imageY = Math.floor((gridRows - imageRows) / 2)
+
+    for (let r = 0; r < imageRows; r++) {
+      const y1 = Math.floor((r * srcH) / imageRows)
+      const y2 = Math.floor(((r + 1) * srcH) / imageRows)
+      for (let c = 0; c < imageCols; c++) {
+        const x1 = Math.floor((c * srcW) / imageCols)
+        const x2 = Math.floor(((c + 1) * srcW) / imageCols)
+        cells[imageY + r][imageX + c] = blockFn(data, srcW, x1, x2, y1, y2, srcH)
+      }
+    }
+  }
+
+  return { cells, imageCols, imageRows, imageX, imageY }
+}
+
 // ---- 色桶（Bucket）色彩计算 ----
 
 function quantizeToBucket(r: number, g: number, b: number, levels: number): number {
