@@ -166,6 +166,108 @@ function averageBlock(
   }
 }
 
+export interface DominantCellsResult {
+  cells: (number | null)[][] // palette index or null
+  imageCols: number
+  imageRows: number
+  imageX: number
+  imageY: number
+}
+
+/**
+ * 主导色彩映射：对每个格子区域内的所有像素做调色板匹配，
+ * 统计出现次数最多的调色板颜色作为该格子的代表色。
+ * 需先对原图应用亮度/对比度/饱和度调整后再调用。
+ */
+export function computeDominantCells(
+  imageData: ImageData,
+  gridCols: number,
+  gridRows: number,
+  keepAspectRatio: boolean,
+  matchColor: (r: number, g: number, b: number) => { index: number },
+): DominantCellsResult {
+  const data = imageData.data
+  const srcW = imageData.width
+  const srcH = imageData.height
+
+  const cells: (number | null)[][] = Array.from({ length: gridRows }, () =>
+    Array.from({ length: gridCols }, () => null as number | null),
+  )
+
+  let imageCols: number, imageRows: number, imageX: number, imageY: number
+
+  if (!keepAspectRatio) {
+    imageCols = gridCols
+    imageRows = gridRows
+    imageX = 0
+    imageY = 0
+
+    for (let row = 0; row < gridRows; row++) {
+      const y1 = Math.floor((row * srcH) / gridRows)
+      const y2 = Math.floor(((row + 1) * srcH) / gridRows)
+      for (let col = 0; col < gridCols; col++) {
+        const x1 = Math.floor((col * srcW) / gridCols)
+        const x2 = Math.floor(((col + 1) * srcW) / gridCols)
+        cells[row][col] = dominantBlock(data, srcW, x1, x2, y1, y2, srcH, matchColor)
+      }
+    }
+  } else {
+    const scale = Math.min(gridCols / srcW, gridRows / srcH)
+    imageCols = Math.round(srcW * scale)
+    imageRows = Math.round(srcH * scale)
+    imageX = Math.floor((gridCols - imageCols) / 2)
+    imageY = Math.floor((gridRows - imageRows) / 2)
+
+    for (let r = 0; r < imageRows; r++) {
+      const y1 = Math.floor((r * srcH) / imageRows)
+      const y2 = Math.floor(((r + 1) * srcH) / imageRows)
+      for (let c = 0; c < imageCols; c++) {
+        const x1 = Math.floor((c * srcW) / imageCols)
+        const x2 = Math.floor(((c + 1) * srcW) / imageCols)
+        cells[imageY + r][imageX + c] = dominantBlock(data, srcW, x1, x2, y1, y2, srcH, matchColor)
+      }
+    }
+  }
+
+  return { cells, imageCols, imageRows, imageX, imageY }
+}
+
+function dominantBlock(
+  data: Uint8ClampedArray,
+  stride: number,
+  x1: number,
+  x2: number,
+  y1: number,
+  y2: number,
+  srcH: number,
+  matchColor: (r: number, g: number, b: number) => { index: number },
+): number | null {
+  const counts = new Map<number, number>()
+  let maxCount = 0
+  let bestIndex: number | null = null
+
+  const sx = Math.max(0, x1)
+  const ex = Math.min(stride, x2)
+  const sy = Math.max(0, y1)
+  const ey = Math.min(y2, srcH)
+
+  for (let y = sy; y < ey; y++) {
+    for (let x = sx; x < ex; x++) {
+      const idx = (y * stride + x) * 4
+      if (data[idx + 3] === 0) continue // skip transparent
+      const match = matchColor(data[idx], data[idx + 1], data[idx + 2])
+      const count = (counts.get(match.index) ?? 0) + 1
+      counts.set(match.index, count)
+      if (count > maxCount) {
+        maxCount = count
+        bestIndex = match.index
+      }
+    }
+  }
+
+  return bestIndex
+}
+
 export function applyAdjustments(
   imageData: ImageData,
   brightness: number,

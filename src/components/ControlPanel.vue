@@ -43,6 +43,17 @@ const emit = defineEmits<{
       @add-color="emit('add-color', $event)"
       @remove-color="emit('remove-color', $event)"
     />
+    <div class="scheme-section">
+      <label class="label">色彩映射</label>
+      <select
+        :value="settings.colorMatchScheme"
+        @change="emit('update:settings', { ...settings, colorMatchScheme: ($event.target as HTMLSelectElement).value as any })"
+      >
+        <option value="average">平均色彩</option>
+        <option value="dominant">主导色彩</option>
+      </select>
+    </div>
+
     <ColorAdjustments
       :modelValue="settings.adjustments"
       @update:modelValue="emit('update:settings', { ...settings, adjustments: $event })"
@@ -72,4 +83,9 @@ const emit = defineEmits<{
 }
 .title { font-size: 20px; font-weight: 600; color: var(--text-h); margin: 0; }
 .label { font-size: 13px; color: var(--text); font-weight: 500; }
+.scheme-section { display: flex; flex-direction: column; gap: 6px; }
+.scheme-section select {
+  padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: 13px; background: var(--bg); color: var(--text-h);
+}
 </style>
