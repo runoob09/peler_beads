@@ -30,10 +30,14 @@ const emit = defineEmits<{
 
     <ImageUploader @upload="emit('upload', $event)" />
 
+    <div class="divider" />
+
     <SizeSelector
       :modelValue="{ cols: settings.gridCols, rows: settings.gridRows, keepAspectRatio: settings.keepAspectRatio }"
       @update:modelValue="emit('update:settings', { ...settings, gridCols: $event.cols, gridRows: $event.rows, keepAspectRatio: $event.keepAspectRatio })"
     />
+
+    <div class="divider" />
 
     <PalettePanel
       :brandNames="brandNames"
@@ -45,73 +49,73 @@ const emit = defineEmits<{
 
     <div class="divider" />
 
-    <details class="section" open>
-      <summary class="section-title">色彩映射</summary>
-      <div class="section-body">
-        <label class="field">
-          <span class="field-label">计算方式</span>
-          <select
-            :value="settings.colorCalcMethod"
-            @change="emit('update:settings', { ...settings, colorCalcMethod: ($event.target as HTMLSelectElement).value as any })"
-          >
-            <option value="average">平均色彩</option>
-            <option value="median">中位色彩</option>
-            <option value="centerWeighted">中心加权</option>
-            <option value="dominant">主导色彩</option>
-            <option value="bucket">色桶主导</option>
-          </select>
-        </label>
+    <div class="section">
+      <h3 class="section-title">色彩映射</h3>
 
-        <div v-if="settings.colorCalcMethod === 'bucket'" class="field">
-          <div class="field-row">
-            <span class="field-label">粒度</span>
-            <span class="field-value">{{ settings.bucketLevels }}</span>
-          </div>
-          <input
-            type="range" min="2" max="32" :value="settings.bucketLevels"
-            @input="emit('update:settings', { ...settings, bucketLevels: Number(($event.target as HTMLInputElement).value) })"
-          />
+      <label class="field">
+        <span class="field-label">计算方式</span>
+        <select
+          :value="settings.colorCalcMethod"
+          @change="emit('update:settings', { ...settings, colorCalcMethod: ($event.target as HTMLSelectElement).value as any })"
+        >
+          <option value="average">平均色彩</option>
+          <option value="median">中位色彩</option>
+          <option value="centerWeighted">中心加权</option>
+          <option value="dominant">主导色彩</option>
+          <option value="bucket">色桶主导</option>
+        </select>
+      </label>
+
+      <div v-if="settings.colorCalcMethod === 'bucket'" class="field">
+        <div class="slider-head">
+          <span class="field-label">粒度</span>
+          <span class="field-value">{{ settings.bucketLevels }}</span>
         </div>
-
-        <div v-if="settings.colorCalcMethod === 'dominant'" class="field">
-          <div class="field-row">
-            <span class="field-label">容差</span>
-            <span class="field-value">{{ settings.tolerance }}</span>
-          </div>
-          <input
-            type="range" min="5" max="100" :value="settings.tolerance"
-            @input="emit('update:settings', { ...settings, tolerance: Number(($event.target as HTMLInputElement).value) })"
-          />
-        </div>
-
-        <label class="field">
-          <span class="field-label">映射方式</span>
-          <select
-            :value="settings.colorMatchMethod"
-            @change="emit('update:settings', { ...settings, colorMatchMethod: ($event.target as HTMLSelectElement).value as any })"
-          >
-            <option value="deltaE">Delta E</option>
-            <option value="ciede2000">CIEDE2000</option>
-            <option value="rgb">RGB 距离</option>
-            <option value="weightedRgb">加权 RGB</option>
-          </select>
-        </label>
+        <input
+          type="range" min="2" max="32" :value="settings.bucketLevels"
+          @input="emit('update:settings', { ...settings, bucketLevels: Number(($event.target as HTMLInputElement).value) })"
+        />
       </div>
-    </details>
 
-    <details class="section" :open="settings.merge.enabled">
-      <summary class="section-title">后处理</summary>
-      <div class="section-body">
-        <label class="field inline">
-          <input
-            type="checkbox" :checked="settings.merge.enabled"
-            @change="emit('update:settings', { ...settings, merge: { ...settings.merge, enabled: ($event.target as HTMLInputElement).checked } })"
-          />
-          <span>合并相近色</span>
-        </label>
+      <div v-if="settings.colorCalcMethod === 'dominant'" class="field">
+        <div class="slider-head">
+          <span class="field-label">容差</span>
+          <span class="field-value">{{ settings.tolerance }}</span>
+        </div>
+        <input
+          type="range" min="5" max="100" :value="settings.tolerance"
+          @input="emit('update:settings', { ...settings, tolerance: Number(($event.target as HTMLInputElement).value) })"
+        />
+      </div>
 
-        <div v-if="settings.merge.enabled" class="field">
-          <div class="field-row">
+      <label class="field">
+        <span class="field-label">映射方式</span>
+        <select
+          :value="settings.colorMatchMethod"
+          @change="emit('update:settings', { ...settings, colorMatchMethod: ($event.target as HTMLSelectElement).value as any })"
+        >
+          <option value="deltaE">Delta E</option>
+          <option value="ciede2000">CIEDE2000</option>
+          <option value="rgb">RGB 距离</option>
+          <option value="weightedRgb">加权 RGB</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="divider" />
+
+    <div class="section">
+      <label class="toggle">
+        <input
+          type="checkbox" :checked="settings.merge.enabled"
+          @change="emit('update:settings', { ...settings, merge: { ...settings.merge, enabled: ($event.target as HTMLInputElement).checked } })"
+        />
+        <h3 class="section-title">后处理</h3>
+      </label>
+
+      <template v-if="settings.merge.enabled">
+        <div class="field">
+          <div class="slider-head">
             <span class="field-label">色差阈值</span>
             <span class="field-value">{{ settings.merge.mergeThreshold }}</span>
           </div>
@@ -120,8 +124,8 @@ const emit = defineEmits<{
             @input="emit('update:settings', { ...settings, merge: { ...settings.merge, mergeThreshold: Number(($event.target as HTMLInputElement).value) } })"
           />
         </div>
-      </div>
-    </details>
+      </template>
+    </div>
 
     <div class="divider" />
 
@@ -145,43 +149,31 @@ const emit = defineEmits<{
   max-height: 100vh; box-sizing: border-box;
 }
 .title {
-  font-size: 18px; font-weight: 600; color: var(--text-h); margin: 0 0 4px;
+  font-size: 18px; font-weight: 600; color: var(--text-h); margin: 0;
 }
 
-/* Dividers */
 .divider {
-  border: none; border-top: 1px solid var(--border);
-  margin: 2px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 0;
 }
 
-/* Collapsible sections */
 .section {
-  margin: 0;
+  display: flex; flex-direction: column; gap: 8px;
 }
 .section-title {
   font-size: 13px; font-weight: 600; color: var(--text-h);
-  cursor: pointer; padding: 4px 0; user-select: none;
-  list-style: none;
+  margin: 0;
 }
-.section-title::-webkit-details-marker { display: none; }
-.section-title::before {
-  content: '▾ '; font-size: 10px; vertical-align: middle;
-  transition: transform 0.15s;
+.toggle {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
 }
-.section[open] .section-title::before { content: '▾ '; }
-.section:not([open]) .section-title::before { content: '▸ '; }
-
-.section-body {
-  display: flex; flex-direction: column; gap: 8px;
-  padding: 4px 0 4px 8px;
+.toggle input[type="checkbox"] {
+  margin: 0; accent-color: var(--accent);
 }
 
-/* Form fields */
 .field {
   display: flex; flex-direction: column; gap: 4px;
-}
-.field.inline {
-  flex-direction: row; align-items: center; gap: 6px;
 }
 .field-label {
   font-size: 12px; color: var(--text);
@@ -190,7 +182,7 @@ const emit = defineEmits<{
   font-size: 12px; color: var(--text);
   font-family: var(--mono, monospace);
 }
-.field-row {
+.slider-head {
   display: flex; justify-content: space-between; align-items: center;
 }
 .field select {
@@ -199,8 +191,5 @@ const emit = defineEmits<{
 }
 .field input[type="range"] {
   width: 100%; margin: 0;
-}
-.field input[type="checkbox"] {
-  margin: 0; accent-color: var(--accent);
 }
 </style>
