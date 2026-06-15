@@ -21,13 +21,7 @@ export interface BeadGrid {
   imageRows: number
 }
 
-export type DitherAlgorithm = 'none' | 'floydSteinberg' | 'atkinson'
 export type RenderMode = 'color' | 'symbol' | 'mixed'
-
-export interface DitherSettings {
-  algorithm: DitherAlgorithm
-  strength: number
-}
 
 export interface AdjustmentSettings {
   brightness: number
@@ -49,7 +43,6 @@ export interface BeadSettings {
   gridCols: number
   gridRows: number
   keepAspectRatio: boolean
-  dithering: DitherSettings
   adjustments: AdjustmentSettings
   display: DisplaySettings
 }

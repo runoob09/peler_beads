@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ColorAdjustments from '../ColorAdjustments.vue'
-import DitherOptions from '../DitherOptions.vue'
 import DisplayOptions from '../DisplayOptions.vue'
 import type { AdjustmentSettings, RenderMode } from '../../types'
 
@@ -20,13 +19,6 @@ describe('ColorAdjustments', () => {
     await r.setValue(50)
     const emitted = wrapper.emitted('update:modelValue')! as any
     expect(emitted[0][0].brightness).toBe(50)
-  })
-})
-
-describe('DitherOptions', () => {
-  it('renders algorithm selector', () => {
-    const wrapper = mount(DitherOptions, { props: { modelValue: { algorithm: 'none', strength: 50 } } })
-    expect(wrapper.find('select').exists()).toBe(true)
   })
 })
 

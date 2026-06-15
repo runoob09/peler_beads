@@ -4,7 +4,6 @@ import ImageUploader from './ImageUploader.vue'
 import SizeSelector from './SizeSelector.vue'
 import PalettePanel from './PalettePanel.vue'
 import ColorAdjustments from './ColorAdjustments.vue'
-import DitherOptions from './DitherOptions.vue'
 import DisplayOptions from './DisplayOptions.vue'
 import ExportButtons from './ExportButtons.vue'
 
@@ -48,10 +47,6 @@ const emit = defineEmits<{
     <ColorAdjustments
       :modelValue="settings.adjustments"
       @update:modelValue="emit('update:settings', { ...settings, adjustments: $event })"
-    />
-    <DitherOptions
-      :modelValue="settings.dithering"
-      @update:modelValue="emit('update:settings', { ...settings, dithering: $event })"
     />
     <DisplayOptions
       :modelValue="settings.display"

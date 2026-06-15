@@ -1,7 +1,7 @@
 import { ref } from 'vue'
-import type { BeadGrid, BeadSettings, PaletteColor } from '../types'
+import type { BeadGrid, BeadSettings, PaletteColor, BeadCell } from '../types'
 import { loadImageFromFile, resizeImage, applyAdjustments } from './useImageProcessor'
-import { applyDithering } from './useDither'
+import { createColorMatcher } from './useColorMatcher'
 
 export function useBeadPipeline() {
   const beadGrid = ref<BeadGrid | null>(null)
@@ -12,7 +12,6 @@ export function useBeadPipeline() {
     gridCols: 29,
     gridRows: 29,
     keepAspectRatio: true,
-    dithering: { algorithm: 'none', strength: 0 },
     adjustments: { brightness: 0, contrast: 0, saturation: 0 },
     display: {
       showGrid: true,
@@ -66,7 +65,25 @@ export function useBeadPipeline() {
 
       progress.value = 80
 
-      const grid = applyDithering(imageData, palette, s.dithering.algorithm, s.dithering.strength)
+      // Nearest-neighbor color matching
+      const matchColor = createColorMatcher(palette)
+      const { data: imgBytes, width: imgW, height: imgH } = imageData
+      const cells: BeadCell[][] = Array.from({ length: imgH }, () => [])
+      for (let row = 0; row < imgH; row++) {
+        for (let col = 0; col < imgW; col++) {
+          const idx = (row * imgW + col) * 4
+          const match = matchColor(imgBytes[idx], imgBytes[idx + 1], imgBytes[idx + 2])
+          cells[row].push({ row, col, colorIndex: match.index })
+        }
+      }
+      const grid: BeadGrid = {
+        rows: imgH,
+        cols: imgW,
+        cells,
+        palette,
+        imageCols: imgW,
+        imageRows: imgH,
+      }
       progress.value = 95
 
       // Nullify cells outside the actual image area (contain mode)
