@@ -342,36 +342,38 @@ watch(
 }
 .brush-palette-scroll {
   flex: 1; overflow-y: auto;
-  display: flex; flex-direction: column;
-  gap: 2px;
+  display: flex; flex-wrap: wrap;
+  gap: 3px;
   padding: 4px 8px 8px;
+  align-content: flex-start;
 }
 .brush-palette-swatch {
-  display: flex; align-items: center; gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  border: 2px solid transparent;
+  display: flex; align-items: center; justify-content: center;
+  width: calc(20px * 1.618);   /* golden ratio */
+  height: 20px;
+  border-radius: 4px;
   cursor: pointer;
   transition: box-shadow 0.2s ease, transform 0.2s ease, filter 0.15s;
-  margin: 2px;
+  flex-shrink: 0;
 }
 .brush-palette-swatch:hover {
-  filter: brightness(0.95);
+  filter: brightness(0.9);
+  transform: scale(1.12);
+  z-index: 1;
 }
 .brush-palette-swatch.active {
-  border-color: transparent;
   box-shadow:
-    0 0 0 3px rgba(170, 59, 255, 0.35),
-    0 2px 12px rgba(170, 59, 255, 0.3),
-    0 1px 3px rgba(0, 0, 0, 0.12);
-  transform: scale(1.03);
+    0 0 0 2px rgba(170, 59, 255, 0.4),
+    0 2px 8px rgba(170, 59, 255, 0.25);
+  transform: scale(1.1);
+  z-index: 1;
 }
 .swatch-code {
-  font-size: 14px;
+  font-size: 8px;
   font-family: monospace;
   font-weight: 700;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  text-align: center;
+  line-height: 1;
+  pointer-events: none;
 }
 </style>
