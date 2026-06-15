@@ -253,6 +253,58 @@ describe('brushStore', () => {
       expect(() => brush.redo()).not.toThrow()
       expect(brush.redoStack.length).toBe(0)
     })
+
+    it('preserves null colorIndex through undo/redo', () => {
+      const bead = useBeadStore()
+      // Create a grid with null cells
+      bead.beadGrid = {
+        rows: 3, cols: 3,
+        palette: [
+          { id: 'w', name: 'White', hex: '#FFFFFF', brand: 'test' },
+          { id: 'b', name: 'Black', hex: '#000000', brand: 'test' },
+        ],
+        cells: [
+          [
+            { row: 0, col: 0, colorIndex: null },
+            { row: 0, col: 1, colorIndex: 0 },
+            { row: 0, col: 2, colorIndex: null },
+          ],
+          [
+            { row: 1, col: 0, colorIndex: 0 },
+            { row: 1, col: 1, colorIndex: null },
+            { row: 1, col: 2, colorIndex: 0 },
+          ],
+          [
+            { row: 2, col: 0, colorIndex: null },
+            { row: 2, col: 1, colorIndex: 0 },
+            { row: 2, col: 2, colorIndex: null },
+          ],
+        ],
+        imageCols: 3,
+        imageRows: 3,
+      }
+      const brush = useBrushStore()
+      brush.setActiveColor(1) // Black
+
+      brush.beginStroke()
+      brush.continueStroke(0, 0) // null → Black
+      brush.continueStroke(0, 2) // null → Black
+      brush.endStroke()
+
+      // Verify painted cells are now Black
+      expect(bead.beadGrid!.cells[0][0].colorIndex).toBe(1)
+      expect(bead.beadGrid!.cells[0][2].colorIndex).toBe(1)
+
+      brush.undo()
+      // Verify restored to null, not -1
+      expect(bead.beadGrid!.cells[0][0].colorIndex).toBeNull()
+      expect(bead.beadGrid!.cells[0][2].colorIndex).toBeNull()
+
+      brush.redo()
+      // Verify redo reapplies Black
+      expect(bead.beadGrid!.cells[0][0].colorIndex).toBe(1)
+      expect(bead.beadGrid!.cells[0][2].colorIndex).toBe(1)
+    })
   })
 
   describe('resetHistory', () => {

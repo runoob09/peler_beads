@@ -5,7 +5,7 @@ import { useBeadStore } from './beadStore'
 interface CellChange {
   row: number
   col: number
-  oldColorIndex: number
+  oldColorIndex: number | null
 }
 
 interface UndoEntry {
@@ -62,7 +62,7 @@ export const useBrushStore = defineStore('brush', () => {
     if (oldColorIndex === activeColorIndex.value) return
 
     strokeCellKeys.add(key)
-    strokeCells.push({ row, col, oldColorIndex: oldColorIndex ?? -1 })
+    strokeCells.push({ row, col, oldColorIndex })
     cell.colorIndex = activeColorIndex.value
   }
 
@@ -85,7 +85,7 @@ export const useBrushStore = defineStore('brush', () => {
 
     for (const { row, col, oldColorIndex } of entry.cells) {
       const cell = grid.cells[row][col]
-      redoCells.push({ row, col, oldColorIndex: cell.colorIndex ?? -1 })
+      redoCells.push({ row, col, oldColorIndex: cell.colorIndex })
       cell.colorIndex = oldColorIndex
     }
 
@@ -103,7 +103,7 @@ export const useBrushStore = defineStore('brush', () => {
 
     for (const { row, col, oldColorIndex } of entry.cells) {
       const cell = grid.cells[row][col]
-      undoCells.push({ row, col, oldColorIndex: cell.colorIndex ?? -1 })
+      undoCells.push({ row, col, oldColorIndex: cell.colorIndex })
       cell.colorIndex = oldColorIndex
     }
 
