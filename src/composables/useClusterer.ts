@@ -6,6 +6,40 @@ interface Point {
   clusterId: number // 0 = unvisited, -1 = noise
 }
 
+interface SpatialIndex {
+  grid: Map<string, Point[]>
+  eps: number
+}
+
+function buildSpatialIndex(points: Point[], eps: number): SpatialIndex {
+  const grid = new Map<string, Point[]>()
+  for (const p of points) {
+    const key = `${Math.floor(p.row / eps)},${Math.floor(p.col / eps)}`
+    if (!grid.has(key)) grid.set(key, [])
+    grid.get(key)!.push(p)
+  }
+  return { grid, eps }
+}
+
+function getNeighborsFromIndex(p: Point, index: SpatialIndex, eps: number): Point[] {
+  const result: Point[] = []
+  const gr = Math.floor(p.row / eps)
+  const gc = Math.floor(p.col / eps)
+  for (let dr = -1; dr <= 1; dr++) {
+    for (let dc = -1; dc <= 1; dc++) {
+      const bucket = index.grid.get(`${gr + dr},${gc + dc}`)
+      if (bucket) {
+        for (const q of bucket) {
+          if (q !== p && manhattan(p, q) <= eps) {
+            result.push(q)
+          }
+        }
+      }
+    }
+  }
+  return result
+}
+
 const EPS = 2
 const MIN_PTS = 10
 
@@ -17,10 +51,11 @@ function manhattan(
 }
 
 function dbscan(points: Point[], eps: number, minPts: number): void {
+  const index = buildSpatialIndex(points, eps)
   let clusterId = 0
   for (const p of points) {
     if (p.clusterId !== 0) continue
-    const neighbors = points.filter((q) => manhattan(p, q) <= eps && q !== p)
+    const neighbors = getNeighborsFromIndex(p, index, eps)
     if (neighbors.length < minPts) {
       p.clusterId = -1
       continue
@@ -35,9 +70,7 @@ function dbscan(points: Point[], eps: number, minPts: number): void {
       }
       if (q.clusterId !== 0) continue
       q.clusterId = clusterId
-      const qNeighbors = points.filter(
-        (r) => manhattan(q, r) <= eps && r !== q,
-      )
+      const qNeighbors = getNeighborsFromIndex(q, index, eps)
       if (qNeighbors.length >= minPts) {
         queue.push(...qNeighbors)
       }
