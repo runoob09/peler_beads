@@ -60,7 +60,7 @@ describe('clusterGrid', () => {
     expect(redBlocks.length).toBe(2)
   })
 
-  it('sorts colors by total cell count ascending (fewer first)', () => {
+  it('sorts colors by total cell count descending (more first)', () => {
     const cells: (number | null)[][] = Array.from({ length: 8 }, () =>
       Array(5).fill(null),
     )
@@ -76,7 +76,7 @@ describe('clusterGrid', () => {
     }
     const grid = makeGrid(8, 5, cells)
     const blocks = clusterGrid(grid)
-    expect(blocks[0].colorIndex).toBe(1) // Blue (fewer) first
+    expect(blocks[0].colorIndex).toBe(0) // Red (more) first
   })
 
   it('groups isolated cells (< minPts) into one 零星块 per color', () => {

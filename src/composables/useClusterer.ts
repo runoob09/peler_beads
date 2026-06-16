@@ -99,7 +99,7 @@ export function clusterGrid(grid: BeadGrid): FocusBlock[] {
   if (colorGroups.size === 0) return []
 
   const sortedColors = [...colorGroups.entries()].sort(
-    (a, b) => a[1].length - b[1].length,
+    (a, b) => b[1].length - a[1].length,
   )
 
   blockSeq = 0
