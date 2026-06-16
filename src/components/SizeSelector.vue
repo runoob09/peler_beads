@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { ref, computed, watch } from 'vue'
+import { BOARD_PRESETS } from '../data/boardPresets'
+
 interface SizeValue {
   cols: number
   rows: number
@@ -8,15 +11,34 @@ interface SizeValue {
 const props = defineProps<{ modelValue: SizeValue }>()
 const emit = defineEmits<{ 'update:modelValue': [value: SizeValue] }>()
 
-const PRESETS = [
-  { cols: 29, rows: 29, label: '29×29' },
-  { cols: 50, rows: 50, label: '50×50' },
-  { cols: 100, rows: 100, label: '100×100' },
-]
+const selectedPresetIndex = ref(BOARD_PRESETS.length - 1)
 
-function selectPreset(preset: { cols: number; rows: number }) {
-  emit('update:modelValue', { ...props.modelValue, cols: preset.cols, rows: preset.rows })
+function updatePresetIndex(idx: number) {
+  selectedPresetIndex.value = idx
+  const preset = BOARD_PRESETS[idx]
+  if (!preset) return
+  if (preset.rows > 0 && preset.cols > 0) {
+    emit('update:modelValue', { ...props.modelValue, cols: preset.cols, rows: preset.rows })
+  }
 }
+
+watch(() => props.modelValue, () => {
+  if (!props.modelValue) {
+    selectedPresetIndex.value = BOARD_PRESETS.length - 1
+    return
+  }
+  const idx = BOARD_PRESETS.findIndex(
+    p => p.rows === props.modelValue.rows && p.cols === props.modelValue.cols
+  )
+  selectedPresetIndex.value = idx >= 0 ? idx : BOARD_PRESETS.length - 1
+}, { immediate: true })
+
+const isCustom = computed(() => {
+  const idx = selectedPresetIndex.value
+  if (idx < 0 || idx >= BOARD_PRESETS.length) return true
+  const p = BOARD_PRESETS[idx]
+  return p.rows === 0 && p.cols === 0
+})
 
 function updateCols(ev: Event) {
   const v = Number((ev.target as HTMLInputElement).value)
@@ -37,21 +59,39 @@ function toggleAspect(ev: Event) {
 <template>
   <div class="size-selector">
     <label class="label">网格尺寸</label>
-    <div class="presets">
-      <button
-        v-for="p in PRESETS"
-        :key="p.label"
-        class="preset-btn"
-        :class="{ active: modelValue.cols === p.cols && modelValue.rows === p.rows }"
-        @click="selectPreset(p)"
+    <div class="preset-row">
+      <select
+        class="preset-select"
+        :value="selectedPresetIndex"
+        @change="updatePresetIndex(Number(($event.target as HTMLSelectElement).value))"
       >
-        {{ p.label }}
-      </button>
+        <option
+          v-for="(p, i) in BOARD_PRESETS"
+          :key="p.label"
+          :value="i"
+        >
+          {{ p.label }}
+        </option>
+      </select>
     </div>
     <div class="custom-size">
-      <input type="number" :value="modelValue.cols" min="1" max="500" class="size-input" @input="updateCols" />
+      <input
+        type="number"
+        :value="modelValue.cols"
+        min="1" max="500"
+        class="size-input"
+        :disabled="!isCustom"
+        @input="updateCols"
+      />
       <span>×</span>
-      <input type="number" :value="modelValue.rows" min="1" max="500" class="size-input" @input="updateRows" />
+      <input
+        type="number"
+        :value="modelValue.rows"
+        min="1" max="500"
+        class="size-input"
+        :disabled="!isCustom"
+        @input="updateRows"
+      />
     </div>
     <label class="aspect-toggle">
       <input type="checkbox" :checked="modelValue.keepAspectRatio" @change="toggleAspect" />
@@ -63,9 +103,16 @@ function toggleAspect(ev: Event) {
 <style scoped>
 .size-selector { display: flex; flex-direction: column; gap: 8px; }
 .label { font-size: 13px; color: var(--text); font-weight: 500; }
-.presets { display: flex; gap: 6px; }
-.preset-btn { flex: 1; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg); color: var(--text-h); cursor: pointer; font-size: 13px; }
-.preset-btn.active { border-color: var(--accent); background: var(--accent-bg); }
+.preset-row { margin-bottom: 4px; }
+.preset-select {
+  width: 100%;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 13px;
+  background: var(--bg);
+  color: var(--text-h);
+}
 .custom-size { display: flex; align-items: center; gap: 6px; }
 .size-input { width: 70px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 4px; text-align: center; font-size: 14px; }
 .aspect-toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); cursor: pointer; }
