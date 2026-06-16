@@ -23,6 +23,9 @@ const { zoom, isPanning, transformStyle, onWheel, onPanStart, onPanEnd } = useZo
 // Brush painting state
 const isPainting = ref(false)
 
+// ---- Right-click context menu for color replace ----
+const contextMenu = ref<{ show: boolean; x: number; y: number; row: number; col: number } | null>(null)
+
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
 const cursorStyle = computed(() => {
@@ -60,9 +63,51 @@ const paletteColors = computed(() => {
   return paletteStore.palette.map((c, i) => ({ ...c, index: i }))
 })
 
+const replaceSourceColor = computed(() => {
+  const idx = brushStore.replaceSourceIndex
+  if (idx === null || !beadStore.beadGrid) return null
+  return beadStore.beadGrid.palette[idx] ?? null
+})
+
 function resolveCell(event: MouseEvent) {
   if (!canvasRef.value) return null
   return getCellFromEvent(event, canvasRef.value, beadStore.beadGrid, cellSize.value, zoom.value)
+}
+
+function onContextMenu(event: MouseEvent) {
+  if (!canvasRef.value || !beadStore.beadGrid) return
+  event.preventDefault()
+  const cell = resolveCell(event)
+  if (!cell) return
+  const colorIndex = beadStore.beadGrid.cells[cell.row][cell.col].colorIndex
+  if (colorIndex === null) return
+
+  contextMenu.value = {
+    show: true,
+    x: event.clientX,
+    y: event.clientY,
+    row: cell.row,
+    col: cell.col,
+  }
+}
+
+function closeContextMenu() {
+  contextMenu.value = null
+}
+
+function onReplaceClick() {
+  if (!contextMenu.value) return
+  brushStore.initReplace(contextMenu.value.row, contextMenu.value.col)
+  closeContextMenu()
+}
+
+function onConfirmReplace(targetIndex: number) {
+  brushStore.confirmReplace(targetIndex)
+  scheduleRender(true)
+}
+
+function onCancelReplaceModal() {
+  brushStore.cancelReplace()
 }
 
 function scheduleRender(forceFull = false) {
@@ -290,6 +335,7 @@ onMounted(() => {
   document.addEventListener('mouseup', onDocumentMouseUp)
   document.addEventListener('keydown', onKeyDownSelect)
   document.addEventListener('keyup', onKeyUpSelect)
+  document.addEventListener('click', closeContextMenu)
 })
 onUnmounted(() => {
   cancelAnimationFrame(renderRafId)
@@ -297,6 +343,7 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', onDocumentMouseUp)
   document.removeEventListener('keydown', onKeyDownSelect)
   document.removeEventListener('keyup', onKeyUpSelect)
+  document.removeEventListener('click', closeContextMenu)
 })
 // Full re-render when grid identity changes (new image loaded)
 watch(
@@ -354,10 +401,53 @@ watch(
         <!-- Right: canvas area -->
         <div class="preview-canvas-area">
           <div class="preview-canvas-wrap" :style="transformStyle">
-            <canvas ref="canvasRef" :style="{ cursor: cursorStyle }" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="handleWheel" @mousedown="onMouseDown" />
+            <canvas ref="canvasRef" :style="{ cursor: cursorStyle }" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="handleWheel" @mousedown="onMouseDown" @contextmenu="onContextMenu" />
             <div v-if="hoveredColor" class="tooltip" :style="{ left: ((hoveredCell?.col ?? 0) + 1) * cellSize + 'px', top: (hoveredCell?.row ?? 0) * cellSize + 'px' }">
               {{ hoveredColor.name || hoveredColor.hex }}
             </div>
+
+            <!-- Right-click context menu -->
+            <Teleport to="body">
+              <div
+                v-if="contextMenu?.show"
+                class="context-menu"
+                :style="{ left: contextMenu.x + 'px', top: contextMenu.y + 'px' }"
+              >
+                <button class="context-menu-item" @click="onReplaceClick">
+                  🔄 替换为…
+                </button>
+              </div>
+            </Teleport>
+
+            <!-- Replace target color modal -->
+            <Teleport to="body">
+              <div v-if="brushStore.showReplaceModal" class="replace-overlay" @click.self="onCancelReplaceModal">
+                <div class="replace-modal">
+                  <p class="replace-title">替换连通块</p>
+                  <p class="replace-info" v-if="replaceSourceColor">
+                    将 <span class="color-tag" :style="{ background: replaceSourceColor.hex }">{{ replaceSourceColor.name }}</span>
+                    的 {{ brushStore.replaceCellCount }} 颗珠子替换为：
+                  </p>
+                  <div class="replace-palette">
+                    <div
+                      v-for="c in paletteColors"
+                      :key="c.index"
+                      class="replace-swatch"
+                      :style="{ background: c.hex }"
+                      :title="c.name || c.hex"
+                      @click="onConfirmReplace(c.index)"
+                    >
+                      <span class="replace-swatch-label" :style="{ color: getTextColor(c.hex) }">
+                        {{ c.name.split(/[\s_]+/)[0] || c.hex }}
+                      </span>
+                    </div>
+                  </div>
+                  <div class="replace-actions">
+                    <button class="btn-cancel" @click="onCancelReplaceModal">取消</button>
+                  </div>
+                </div>
+              </div>
+            </Teleport>
           </div>
           <div class="zoom-indicator">{{ zoomPercent }}%</div>
           <div class="grid-info">{{ beadStore.beadGrid.rows }} × {{ beadStore.beadGrid.cols }} · {{ beadStore.beadGrid.palette.length }} 色</div>
@@ -475,4 +565,22 @@ watch(
     0 0 0 2px rgba(170, 59, 255, 0.4),
     0 2px 8px rgba(170, 59, 255, 0.25);
 }
+
+/* Context menu */
+.context-menu { position: fixed; z-index: 200; background: var(--bg, #fff); border: 1px solid var(--border, #e5e4e7); border-radius: 8px; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12); padding: 4px 0; min-width: 140px; }
+.context-menu-item { display: block; width: 100%; padding: 8px 16px; border: none; background: none; font-size: 13px; color: var(--text-h, #1a1a2e); cursor: pointer; text-align: left; }
+.context-menu-item:hover { background: var(--accent-bg, rgba(170, 59, 255, 0.1)); }
+
+/* Replace modal */
+.replace-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; z-index: 150; }
+.replace-modal { background: var(--bg, #fff); border-radius: 12px; padding: 24px; max-width: 360px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); }
+.replace-title { font-size: 16px; font-weight: 600; color: var(--text-h, #1a1a2e); margin: 0 0 8px; }
+.replace-info { font-size: 13px; color: var(--text, #6b6375); margin: 0 0 12px; }
+.color-tag { display: inline-block; padding: 1px 8px; border-radius: 4px; color: #fff; font-size: 12px; }
+.replace-palette { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; max-height: 200px; overflow-y: auto; }
+.replace-swatch { width: 48px; height: 32px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.15s, box-shadow 0.15s; border: 1px solid var(--border, #e5e4e7); }
+.replace-swatch:hover { transform: scale(1.15); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15); }
+.replace-swatch-label { font-size: 10px; font-family: monospace; font-weight: 700; pointer-events: none; }
+.replace-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.btn-cancel { background: none; border: 1px solid var(--border, #e5e4e7); color: var(--text, #6b6375); padding: 6px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; }
 </style>

@@ -417,4 +417,131 @@ describe('brushStore', () => {
       expect(brush.continueStroke(0, 1)).toBe(false) // dedup
     })
   })
+
+  describe('floodReplace', () => {
+    function makeReplaceTestGrid(): BeadGrid {
+      const palette: PaletteColor[] = [
+        { id: 'w', name: 'White', hex: '#FFFFFF', brand: 'test' },
+        { id: 'b', name: 'Black', hex: '#000000', brand: 'test' },
+        { id: 'r', name: 'Red', hex: '#FF0000', brand: 'test' },
+      ]
+      // 4x4 grid: White block in top-left 2x2, separated White in bottom-right
+      //   W W B B
+      //   W W B B
+      //   B B W B   <-- isolated White at [2][2]
+      //   B B B W   <-- isolated White at [3][3]
+      return {
+        rows: 4, cols: 4, palette,
+        cells: [
+          [
+            { row: 0, col: 0, colorIndex: 0 }, { row: 0, col: 1, colorIndex: 0 },
+            { row: 0, col: 2, colorIndex: 1 }, { row: 0, col: 3, colorIndex: 1 },
+          ],
+          [
+            { row: 1, col: 0, colorIndex: 0 }, { row: 1, col: 1, colorIndex: 0 },
+            { row: 1, col: 2, colorIndex: 1 }, { row: 1, col: 3, colorIndex: 1 },
+          ],
+          [
+            { row: 2, col: 0, colorIndex: 1 }, { row: 2, col: 1, colorIndex: 1 },
+            { row: 2, col: 2, colorIndex: 0 }, { row: 2, col: 3, colorIndex: 1 },
+          ],
+          [
+            { row: 3, col: 0, colorIndex: 1 }, { row: 3, col: 1, colorIndex: 1 },
+            { row: 3, col: 2, colorIndex: 1 }, { row: 3, col: 3, colorIndex: 0 },
+          ],
+        ],
+        imageCols: 4, imageRows: 4,
+      }
+    }
+
+    it('initReplace computes connected component cells', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeReplaceTestGrid()
+      const brush = useBrushStore()
+      brush.initReplace(0, 0)
+      expect(brush.replaceCellCount).toBe(4) // 2x2 block
+      expect(brush.showReplaceModal).toBe(true)
+      expect(brush.replaceSourceIndex).toBe(0)
+    })
+
+    it('initReplace only captures connected cells, not all same-color cells', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeReplaceTestGrid()
+      const brush = useBrushStore()
+      brush.initReplace(0, 0)
+      expect(brush.replaceCellCount).toBe(4) // NOT 6 (the two isolated whites stay untouched)
+      brush.confirmReplace(2) // Replace with Red
+      expect(bead.beadGrid!.cells[2][2].colorIndex).toBe(0) // unchanged (isolated)
+    })
+
+    it('confirmReplace changes the entire connected component', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeReplaceTestGrid()
+      const brush = useBrushStore()
+      brush.initReplace(0, 0)
+      brush.confirmReplace(2)
+      expect(bead.beadGrid!.cells[0][0].colorIndex).toBe(2)
+      expect(bead.beadGrid!.cells[0][1].colorIndex).toBe(2)
+      expect(bead.beadGrid!.cells[1][0].colorIndex).toBe(2)
+      expect(bead.beadGrid!.cells[1][1].colorIndex).toBe(2)
+    })
+
+    it('confirmReplace pushes an undo entry', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeReplaceTestGrid()
+      const brush = useBrushStore()
+      brush.initReplace(0, 0)
+      brush.confirmReplace(2)
+      expect(brush.undoStack.length).toBe(1)
+      expect(brush.undoStack[0].cells.length).toBe(4)
+    })
+
+    it('undo after confirmReplace restores original colors', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeReplaceTestGrid()
+      const brush = useBrushStore()
+      brush.initReplace(0, 0)
+      brush.confirmReplace(2)
+      brush.undo()
+      expect(bead.beadGrid!.cells[0][0].colorIndex).toBe(0)
+      expect(bead.beadGrid!.cells[0][1].colorIndex).toBe(0)
+    })
+
+    it('initReplace does nothing for null cell', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = {
+        rows: 2, cols: 2,
+        palette: [{ id: 'w', name: 'White', hex: '#FFFFFF', brand: 'test' }],
+        cells: [
+          [{ row: 0, col: 0, colorIndex: null }, { row: 0, col: 1, colorIndex: 0 }],
+          [{ row: 1, col: 0, colorIndex: 0 }, { row: 1, col: 1, colorIndex: 0 }],
+        ],
+        imageCols: 2, imageRows: 2,
+      }
+      const brush = useBrushStore()
+      brush.initReplace(0, 0)
+      expect(brush.showReplaceModal).toBe(false)
+      expect(brush.replaceCellCount).toBe(0)
+    })
+
+    it('cancelReplace resets state', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeReplaceTestGrid()
+      const brush = useBrushStore()
+      brush.initReplace(0, 0)
+      expect(brush.showReplaceModal).toBe(true)
+      brush.cancelReplace()
+      expect(brush.showReplaceModal).toBe(false)
+      expect(brush.replaceSourceIndex).toBeNull()
+      expect(brush.replaceCellCount).toBe(0)
+    })
+
+    it('confirmReplace does nothing when no replace is active', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeReplaceTestGrid()
+      const brush = useBrushStore()
+      expect(() => brush.confirmReplace(2)).not.toThrow()
+      expect(brush.undoStack.length).toBe(0)
+    })
+  })
 })

@@ -24,6 +24,12 @@ export const useBrushStore = defineStore('brush', () => {
   const selectStart = ref<{ row: number; col: number } | null>(null)
   const previewRect = ref<{ r1: number; c1: number; r2: number; c2: number } | null>(null)
 
+  // ---- Color replace (flood-fill connected component) ----
+  const showReplaceModal = ref(false)
+  const replaceSourceIndex = ref<number | null>(null)
+  const replaceCellCount = ref(0)
+  let replaceCellsList: { row: number; col: number }[] = []
+
   // Per-stroke accumulators (not reactive — only used during a stroke)
   let strokeCells: CellChange[] = []
   let strokeCellKeys = new Set<string>()
@@ -178,6 +184,87 @@ export const useBrushStore = defineStore('brush', () => {
     previewRect.value = null
   }
 
+  /** BFS flood-fill: find all cells connected to (startRow, startCol) with same colorIndex */
+  function floodFillConnected(
+    grid: { rows: number; cols: number; cells: { row: number; col: number; colorIndex: number | null }[][] },
+    startRow: number,
+    startCol: number,
+  ): { row: number; col: number }[] {
+    const sourceIndex = grid.cells[startRow][startCol].colorIndex
+    if (sourceIndex === null) return []
+
+    const visited = new Set<string>()
+    const result: { row: number; col: number }[] = []
+    const queue: { row: number; col: number }[] = [{ row: startRow, col: startCol }]
+
+    while (queue.length > 0) {
+      const { row, col } = queue.shift()!
+      const key = `${row},${col}`
+      if (visited.has(key)) continue
+      if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) continue
+      if (grid.cells[row][col].colorIndex !== sourceIndex) continue
+
+      visited.add(key)
+      result.push({ row, col })
+
+      queue.push(
+        { row: row - 1, col },
+        { row: row + 1, col },
+        { row, col: col - 1 },
+        { row, col: col + 1 },
+      )
+    }
+
+    return result
+  }
+
+  function initReplace(row: number, col: number) {
+    const beadStore = useBeadStore()
+    const grid = beadStore.beadGrid
+    if (!grid) return
+
+    const cells = floodFillConnected(grid, row, col)
+    if (cells.length === 0) return
+
+    const sourceIndex = grid.cells[row][col].colorIndex
+    replaceSourceIndex.value = sourceIndex
+    replaceCellCount.value = cells.length
+    replaceCellsList = cells
+    showReplaceModal.value = true
+  }
+
+  function confirmReplace(targetIndex: number) {
+    if (replaceCellsList.length === 0) return
+    const beadStore = useBeadStore()
+    const grid = beadStore.beadGrid
+    if (!grid) return
+
+    const changes: CellChange[] = []
+    for (const { row, col } of replaceCellsList) {
+      const cell = grid.cells[row][col]
+      if (cell.colorIndex === targetIndex) continue
+      changes.push({ row, col, oldColorIndex: cell.colorIndex })
+      cell.colorIndex = targetIndex
+    }
+
+    if (changes.length > 0) {
+      undoStack.value.push({ cells: changes })
+      redoStack.value = []
+    }
+
+    showReplaceModal.value = false
+    replaceSourceIndex.value = null
+    replaceCellCount.value = 0
+    replaceCellsList = []
+  }
+
+  function cancelReplace() {
+    showReplaceModal.value = false
+    replaceSourceIndex.value = null
+    replaceCellCount.value = 0
+    replaceCellsList = []
+  }
+
   function resetHistory() {
     undoStack.value = []
     redoStack.value = []
@@ -208,5 +295,11 @@ export const useBrushStore = defineStore('brush', () => {
     undo,
     redo,
     resetHistory,
+    showReplaceModal,
+    replaceSourceIndex,
+    replaceCellCount,
+    initReplace,
+    confirmReplace,
+    cancelReplace,
   }
 })
