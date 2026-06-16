@@ -150,18 +150,7 @@ async function onImportFromDrawing() {
 <style scoped>
 .app-layout { display: flex; height: 100vh; overflow: hidden; }
 
-#app { width: 100%; max-width: 100%; }
-
 .preview-wrapper { flex: 1; display: flex; flex-direction: column; position: relative; }
 .error-banner { background: #fee2e2; color: #dc2626; padding: 8px 16px; font-size: 13px; }
 .loading-bar { background: var(--accent-bg, rgba(170, 59, 255, 0.1)); color: var(--accent, #aa3bff); padding: 4px 16px; font-size: 12px; }
-
-/* Beautified scrollbar */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border, #d4d4d8); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--text, #9ca3af); }
-
-/* Firefox */
-* { scrollbar-width: thin; scrollbar-color: var(--border, #d4d4d8) transparent; }
 </style>
