@@ -12,7 +12,7 @@ function makeGrid(): BeadGrid {
     { id: 'b', name: 'Blue', hex: '#0000FF', brand: 'test' },
   ]
   const cells: (number | null)[][] = Array.from({ length: 6 }, (_, r) =>
-    Array.from({ length: 6 }, (_, c) => (r < 4 ? 0 : 1)),
+    Array.from({ length: 6 }, (_1, _c) => (r < 4 ? 0 : 1)),
   )
   return {
     rows: 6, cols: 6, palette,
