@@ -20,6 +20,9 @@ export const useBrushStore = defineStore('brush', () => {
   const undoStack = ref<UndoEntry[]>([])
   const redoStack = ref<UndoEntry[]>([])
   const isStroking = ref(false)
+  const selectMode = ref(false)
+  const selectStart = ref<{ row: number; col: number } | null>(null)
+  const previewRect = ref<{ r1: number; c1: number; r2: number; c2: number } | null>(null)
 
   // Per-stroke accumulators (not reactive — only used during a stroke)
   let strokeCells: CellChange[] = []
@@ -118,6 +121,63 @@ export const useBrushStore = defineStore('brush', () => {
     undoStack.value.push({ cells: undoCells })
   }
 
+  function beginSelect(row: number, col: number) {
+    selectMode.value = true
+    selectStart.value = { row, col }
+    previewRect.value = { r1: row, c1: col, r2: row, c2: col }
+  }
+
+  function updatePreview(row: number, col: number) {
+    if (!selectStart.value) return
+    previewRect.value = {
+      r1: selectStart.value.row,
+      c1: selectStart.value.col,
+      r2: row,
+      c2: col,
+    }
+  }
+
+  function completeSelect(
+    startRow: number, startCol: number, endRow: number, endCol: number,
+  ) {
+    const beadStore = useBeadStore()
+    const grid = beadStore.beadGrid
+    if (!grid || activeColorIndex.value === null) {
+      cancelSelect()
+      return
+    }
+
+    const r1 = Math.max(0, Math.min(startRow, endRow))
+    const r2 = Math.min(grid.rows - 1, Math.max(startRow, endRow))
+    const c1 = Math.max(0, Math.min(startCol, endCol))
+    const c2 = Math.min(grid.cols - 1, Math.max(startCol, endCol))
+
+    const targetIndex = activeColorIndex.value === ERASER_INDEX ? null : activeColorIndex.value
+    const changes: CellChange[] = []
+
+    for (let r = r1; r <= r2; r++) {
+      for (let c = c1; c <= c2; c++) {
+        const cell = grid.cells[r][c]
+        if (cell.colorIndex === targetIndex) continue
+        changes.push({ row: r, col: c, oldColorIndex: cell.colorIndex })
+        cell.colorIndex = targetIndex
+      }
+    }
+
+    if (changes.length > 0) {
+      undoStack.value.push({ cells: changes })
+      redoStack.value = []
+    }
+
+    cancelSelect()
+  }
+
+  function cancelSelect() {
+    selectMode.value = false
+    selectStart.value = null
+    previewRect.value = null
+  }
+
   function resetHistory() {
     undoStack.value = []
     redoStack.value = []
@@ -130,6 +190,9 @@ export const useBrushStore = defineStore('brush', () => {
     brushMode,
     activeColorIndex,
     isStroking,
+    selectMode,
+    selectStart,
+    previewRect,
     undoStack,
     redoStack,
     toggleBrushMode,
@@ -138,6 +201,10 @@ export const useBrushStore = defineStore('brush', () => {
     beginStroke,
     continueStroke,
     endStroke,
+    beginSelect,
+    updatePreview,
+    completeSelect,
+    cancelSelect,
     undo,
     redo,
     resetHistory,

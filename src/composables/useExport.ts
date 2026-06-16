@@ -96,11 +96,26 @@ export function renderCell(
   showLabels: boolean,
 ): void {
   const cell = grid.cells[row][col]
-  if (cell.colorIndex === null) return
-
-  const color = grid.palette[cell.colorIndex]
   const x = col * cellSize
   const y = row * cellSize
+
+  if (cell.colorIndex === null) {
+    // Null cell: render diagonal cross to distinguish from white background
+    const pad = Math.max(2, cellSize * 0.15)
+    ctx.strokeStyle = '#d4d4d8'
+    ctx.lineWidth = 1
+    ctx.beginPath()
+    ctx.moveTo(x + pad, y + pad)
+    ctx.lineTo(x + cellSize - pad, y + cellSize - pad)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(x + cellSize - pad, y + pad)
+    ctx.lineTo(x + pad, y + cellSize - pad)
+    ctx.stroke()
+    return
+  }
+
+  const color = grid.palette[cell.colorIndex]
 
   if (renderMode === 'symbol') {
     ctx.fillStyle = '#FFFFFF'

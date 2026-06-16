@@ -35,6 +35,25 @@ const cursorStyle = computed(() => {
   return brushStore.brushMode ? 'crosshair' : 'default'
 })
 
+// Rectangle select state
+let shiftHeld = false
+
+function onKeyDownSelect(e: KeyboardEvent) {
+  if (e.key === 'Shift' && brushStore.brushMode) {
+    shiftHeld = true
+  }
+}
+
+function onKeyUpSelect(e: KeyboardEvent) {
+  if (e.key === 'Shift') {
+    shiftHeld = false
+    if (brushStore.selectStart.value) {
+      brushStore.cancelSelect()
+      scheduleRender(true)
+    }
+  }
+}
+
 // Persistent offscreen canvas for cell colors (no grid lines)
 let offscreenCanvas: HTMLCanvasElement | null = null
 let offscreenCtx: CanvasRenderingContext2D | null = null
@@ -152,10 +171,48 @@ function doRender() {
     boldGridColor: d.boldGridColor,
     boldGridWidth: d.boldGridWidth,
   })
+
+  // Draw rectangle select preview
+  const rect = brushStore.previewRect
+  if (rect && brushStore.selectStart.value) {
+    const rr1 = Math.min(rect.r1, rect.r2)
+    const rr2 = Math.max(rect.r1, rect.r2)
+    const cc1 = Math.min(rect.c1, rect.c2)
+    const cc2 = Math.max(rect.c1, rect.c2)
+    const rx = cc1 * cellSize.value
+    const ry = rr1 * cellSize.value
+    const rw = (cc2 - cc1 + 1) * cellSize.value
+    const rh = (rr2 - rr1 + 1) * cellSize.value
+    ctx.fillStyle = 'rgba(59, 130, 246, 0.15)'
+    ctx.fillRect(rx, ry, rw, rh)
+    ctx.strokeStyle = 'rgba(59, 130, 246, 0.7)'
+    ctx.lineWidth = 2
+    ctx.strokeRect(rx, ry, rw, rh)
+  }
 }
 
 function onMouseDown(event: MouseEvent) {
   if (brushStore.brushMode) {
+    // Shift-rectangle select mode
+    if (shiftHeld) {
+      const cell = getCellFromEvent(event)
+      if (!cell) return
+      if (!brushStore.selectStart.value) {
+        brushStore.beginSelect(cell.row, cell.col)
+        scheduleRender(true)
+      } else {
+        brushStore.completeSelect(
+          brushStore.selectStart.value.row,
+          brushStore.selectStart.value.col,
+          cell.row,
+          cell.col,
+        )
+        scheduleRender(true)
+      }
+      return
+    }
+
+    // Normal brush painting
     isPainting.value = true
     brushStore.beginStroke()
     const cell = getCellFromEvent(event)
@@ -172,6 +229,16 @@ function onMouseDown(event: MouseEvent) {
 
 function onMouseMove(event: MouseEvent) {
   if (!beadStore.beadGrid || !canvasRef.value) return
+
+  // Shift-rectangle preview
+  if (shiftHeld && brushStore.selectStart.value) {
+    const cell = getCellFromEvent(event)
+    if (cell) {
+      brushStore.updatePreview(cell.row, cell.col)
+    }
+    return
+  }
+
   if (isPainting.value) {
     const cell = getCellFromEvent(event)
     if (cell) {
@@ -291,6 +358,8 @@ onMounted(() => {
   document.addEventListener('mousemove', onPanMove)
   document.addEventListener('mouseup', onDocumentMouseUp)
   document.addEventListener('keydown', onKeyDown)
+  document.addEventListener('keydown', onKeyDownSelect)
+  document.addEventListener('keyup', onKeyUpSelect)
 })
 onUnmounted(() => {
   cancelAnimationFrame(renderRafId)
@@ -298,6 +367,8 @@ onUnmounted(() => {
   document.removeEventListener('mousemove', onPanMove)
   document.removeEventListener('mouseup', onDocumentMouseUp)
   document.removeEventListener('keydown', onKeyDown)
+  document.removeEventListener('keydown', onKeyDownSelect)
+  document.removeEventListener('keyup', onKeyUpSelect)
 })
 // Full re-render when grid identity changes (new image loaded)
 watch(
