@@ -15,6 +15,8 @@ function onFileChange(event: Event) {
     hasFile.value = true
     emit('upload', file)
   }
+  // 重置 input 值，允许再次选择同一文件
+  input.value = ''
 }
 
 function onDrop(event: DragEvent) {

@@ -12,7 +12,7 @@ const focusStore = useFocusStore()
 
 const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
-const { cellSize, recompute } = useCellSize(containerRef, beadStore.beadGrid)
+const { cellSize, recompute } = useCellSize(containerRef, () => beadStore.beadGrid)
 
 function updateCanvasTransform(_px: number, _py: number, _z: number) {
   if (canvasRef.value) {
@@ -195,5 +195,5 @@ onUnmounted(() => {
 
 <style scoped>
 .focus-grid { flex: 1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--bg); }
-canvas { transform-origin: 0 0; }
+canvas { transform-origin: 0 0; image-rendering: pixelated; image-rendering: crisp-edges; }
 </style>

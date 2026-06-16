@@ -16,9 +16,9 @@ const paletteStore = usePaletteStore()
 const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
 const hoveredCell = ref<{ row: number; col: number } | null>(null)
-const { cellSize, recompute } = useCellSize(containerRef, beadStore.beadGrid)
+const { cellSize, recompute } = useCellSize(containerRef, () => beadStore.beadGrid)
 
-const { zoom, panX, panY, isPanning, transformStyle, onWheel, onPanStart, onPanEnd } = useZoomPan()
+const { zoom, isPanning, transformStyle, onWheel, onPanStart, onPanEnd } = useZoomPan()
 
 // Brush painting state
 const isPainting = ref(false)
@@ -350,7 +350,7 @@ watch(
         <div class="preview-canvas-area">
           <div class="preview-canvas-wrap" :style="transformStyle">
             <canvas ref="canvasRef" :style="{ cursor: cursorStyle }" @mousemove="onMouseMove" @mouseleave="onMouseLeave" @wheel="handleWheel" @mousedown="onMouseDown" />
-            <div v-if="hoveredColor" class="tooltip" :style="{ left: (panX + (hoveredCell?.col ?? 0) * cellSize * zoom + cellSize * zoom) + 'px', top: (panY + (hoveredCell?.row ?? 0) * cellSize * zoom) + 'px' }">
+            <div v-if="hoveredColor" class="tooltip" :style="{ left: ((hoveredCell?.col ?? 0) + 1) * cellSize + 'px', top: (hoveredCell?.row ?? 0) * cellSize + 'px' }">
               {{ hoveredColor.name || hoveredColor.hex }}
             </div>
           </div>
@@ -380,6 +380,10 @@ watch(
   flex: 1; min-width: 0; overflow: hidden;
 }
 .preview-canvas-wrap { transform-origin: 0 0; }
+.preview-canvas-wrap canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
 .tooltip { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; pointer-events: none; transform: translate(8px, -50%); z-index: 10; }
 .zoom-indicator { margin-top: 8px; font-size: 12px; color: var(--accent, #aa3bff); font-family: var(--mono, monospace); }
 .grid-info { margin-top: 4px; font-size: 12px; color: var(--text); font-family: var(--mono, monospace); }

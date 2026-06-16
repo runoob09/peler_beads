@@ -149,8 +149,8 @@ export function drawNullCellMark(
   x: number, y: number, cellSize: number,
 ): void {
   const pad = Math.max(2, cellSize * 0.15)
-  ctx.strokeStyle = '#d4d4d8'
-  ctx.lineWidth = 1
+  ctx.strokeStyle = '#000'
+  ctx.lineWidth = Math.max(1.5, cellSize * 0.06)
   ctx.beginPath()
   ctx.moveTo(x + pad, y + pad)
   ctx.lineTo(x + cellSize - pad, y + cellSize - pad)

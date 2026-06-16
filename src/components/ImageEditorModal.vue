@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
-import { useImageEditor, type CropRect } from '../composables/useImageEditor'
+import { useImageEditor } from '../composables/useImageEditor'
 
 const props = defineProps<{
   show: boolean
@@ -18,14 +18,27 @@ const containerRef = ref<HTMLDivElement>()
 const filterDebounce = ref<ReturnType<typeof setTimeout>>()
 
 // Crop drag state
-interface DragState {
-  type: 'move' | 'resize-nw' | 'resize-ne' | 'resize-sw' | 'resize-se' | 'resize-n' | 'resize-s' | 'resize-e' | 'resize-w'
-  startX: number
-  startY: number
-  startRect: CropRect
+type DragMode = 'create' | 'move'
+  | 'resize-nw' | 'resize-ne' | 'resize-sw' | 'resize-se'
+  | 'resize-n' | 'resize-s' | 'resize-e' | 'resize-w'
+
+const dragMode = ref<DragMode | null>(null)
+const dragStart = ref({ x: 0, y: 0 })
+const dragStartRect = ref({ x: 0, y: 0, w: 0, h: 0 })
+const cursorStyle = ref('crosshair')
+
+// rAF throttle for crop drag renders
+let renderRafId = 0
+function scheduleRender() {
+  if (renderRafId) return
+  renderRafId = requestAnimationFrame(() => {
+    renderRafId = 0
+    editor.render()
+  })
 }
 
-const drag = ref<DragState | null>(null)
+const HANDLE = 8  // corner handle hit radius (in image coords)
+const EDGE = 4     // edge hit radius
 
 // Watch show + imageFile to load image
 watch(
@@ -60,6 +73,7 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('resize', onResize)
   if (filterDebounce.value) clearTimeout(filterDebounce.value)
+  if (renderRafId) { cancelAnimationFrame(renderRafId); renderRafId = 0 }
 })
 
 function onFilterInput(type: 'brightness' | 'contrast' | 'saturation', event: Event) {
@@ -69,89 +83,155 @@ function onFilterInput(type: 'brightness' | 'contrast' | 'saturation', event: Ev
   filterDebounce.value = setTimeout(() => editor.render(), 50)
 }
 
-// Compute image coordinates from mouse event
-function imageCoordsFromEvent(e: MouseEvent) {
+// Compute image coordinates from mouse event, clamping to image bounds
+function imageCoordsFromEvent(e: MouseEvent): { x: number; y: number } | null {
   const canvas = previewCanvas.value
-  if (!canvas || !state.sourceImage) return { x: 0, y: 0, scale: 1, offsetX: 0, offsetY: 0 }
+  if (!canvas || !state.sourceImage) return null
   const rect = canvas.getBoundingClientRect()
   const cx = e.clientX - rect.left
   const cy = e.clientY - rect.top
 
-  const crop = state.cropRect
-  const sw = crop?.w ?? state.sourceImage.naturalWidth
-  const sh = crop?.h ?? state.sourceImage.naturalHeight
+  const imgW = state.sourceImage.naturalWidth
+  const imgH = state.sourceImage.naturalHeight
   const isVertical = state.rotation === 90 || state.rotation === 270
-  const outW = isVertical ? sh : sw
-  const outH = isVertical ? sw : sh
+  const outW = isVertical ? imgH : imgW
+  const outH = isVertical ? imgW : imgH
   const scale = Math.min(canvas.width / outW, canvas.height / outH)
   const dw = outW * scale
   const dh = outH * scale
   const ox = (canvas.width - dw) / 2
   const oy = (canvas.height - dh) / 2
 
-  return { x: (cx - ox) / scale, y: (cy - oy) / scale, scale, offsetX: ox, offsetY: oy }
+  const ix = (cx - ox) / scale
+  const iy = (cy - oy) / scale
+
+  // Clamp to image bounds (don't return null — allow drag along edges)
+  return { x: clampTo(ix, 0, imgW), y: clampTo(iy, 0, imgH) }
 }
 
-function hitTestResizeHandle(ix: number, iy: number): DragState['type'] | null {
-  const rect = state.cropRect
-  if (!rect) return null
-  const hs = 8
-  if (Math.abs(ix - rect.x) < hs && Math.abs(iy - rect.y) < hs) return 'resize-nw'
-  if (Math.abs(ix - rect.x - rect.w) < hs && Math.abs(iy - rect.y) < hs) return 'resize-ne'
-  if (Math.abs(ix - rect.x) < hs && Math.abs(iy - rect.y - rect.h) < hs) return 'resize-sw'
-  if (Math.abs(ix - rect.x - rect.w) < hs && Math.abs(iy - rect.y - rect.h) < hs) return 'resize-se'
-  if (Math.abs(ix - rect.x) < 4 && iy >= rect.y && iy <= rect.y + rect.h) return 'resize-w'
-  if (Math.abs(ix - rect.x - rect.w) < 4 && iy >= rect.y && iy <= rect.y + rect.h) return 'resize-e'
-  if (Math.abs(iy - rect.y) < 4 && ix >= rect.x && ix <= rect.x + rect.w) return 'resize-n'
-  if (Math.abs(iy - rect.y - rect.h) < 4 && ix >= rect.x && ix <= rect.x + rect.w) return 'resize-s'
-  if (ix >= rect.x && ix <= rect.x + rect.w && iy >= rect.y && iy <= rect.y + rect.h) return 'move'
+function clampTo(v: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, v))
+}
+
+// Check if a crop rect covers the full source image (i.e. is the default, not a user selection)
+function isFullImageRect(r: { x: number; y: number; w: number; h: number }): boolean {
+  const img = state.sourceImage
+  if (!img) return false
+  return r.x <= 0 && r.y <= 0 && r.x + r.w >= img.naturalWidth && r.y + r.h >= img.naturalHeight
+}
+
+// Hit-test crop rect: returns the drag mode for a given image-coordinate point.
+// Returns null when the crop rect is the full-image default (user hasn't made a selection yet).
+function hitTest(ix: number, iy: number): DragMode | null {
+  const r = state.cropRect
+  if (!r || r.w === 0 || r.h === 0) return null // no rect yet or still creating
+  if (isFullImageRect(r)) return null // full-image default — treat as "no selection"
+
+  // corners
+  if (Math.abs(ix - r.x) < HANDLE && Math.abs(iy - r.y) < HANDLE) return 'resize-nw'
+  if (Math.abs(ix - r.x - r.w) < HANDLE && Math.abs(iy - r.y) < HANDLE) return 'resize-ne'
+  if (Math.abs(ix - r.x) < HANDLE && Math.abs(iy - r.y - r.h) < HANDLE) return 'resize-sw'
+  if (Math.abs(ix - r.x - r.w) < HANDLE && Math.abs(iy - r.y - r.h) < HANDLE) return 'resize-se'
+  // edges
+  if (Math.abs(iy - r.y) < EDGE && ix > r.x && ix < r.x + r.w) return 'resize-n'
+  if (Math.abs(iy - r.y - r.h) < EDGE && ix > r.x && ix < r.x + r.w) return 'resize-s'
+  if (Math.abs(ix - r.x) < EDGE && iy > r.y && iy < r.y + r.h) return 'resize-w'
+  if (Math.abs(ix - r.x - r.w) < EDGE && iy > r.y && iy < r.y + r.h) return 'resize-e'
+  // inside
+  if (ix >= r.x && ix <= r.x + r.w && iy >= r.y && iy <= r.y + r.h) return 'move'
+
   return null
 }
 
 function onCropMouseDown(e: MouseEvent) {
   if (!state.cropEnabled) return
   const coords = imageCoordsFromEvent(e)
-  const hit = hitTestResizeHandle(coords.x, coords.y)
-  if (hit && state.cropRect) {
-    drag.value = { type: hit, startX: coords.x, startY: coords.y, startRect: { ...state.cropRect } }
-  } else if (!hit) {
-    state.cropRect = { x: coords.x, y: coords.y, w: 1, h: 1 }
-    drag.value = { type: 'resize-se', startX: coords.x, startY: coords.y, startRect: { x: coords.x, y: coords.y, w: 1, h: 1 } }
+  if (!coords) return
+
+  const hit = hitTest(coords.x, coords.y)
+  if (hit) {
+    // Resize or move existing rect
+    dragMode.value = hit
+    dragStart.value = { x: coords.x, y: coords.y }
+    dragStartRect.value = state.cropRect ? { ...state.cropRect } : { x: 0, y: 0, w: 0, h: 0 }
+  } else {
+    // Create new selection: reset crop rect to zero-size at click point
+    dragMode.value = 'create'
+    dragStart.value = { x: coords.x, y: coords.y }
+    dragStartRect.value = { x: coords.x, y: coords.y, w: 0, h: 0 }
+    // Bypass setCropRect (which enforces min 10) — use raw rect during drag
+    state.cropRect = { x: coords.x, y: coords.y, w: 0, h: 0 }
   }
+  scheduleRender()
 }
 
 function onCropMouseMove(e: MouseEvent) {
-  if (!drag.value || !state.cropRect) return
   const coords = imageCoordsFromEvent(e)
-  const dx = coords.x - drag.value.startX
-  const dy = coords.y - drag.value.startY
-  const sr = drag.value.startRect
-  let newRect: CropRect
 
-  switch (drag.value.type) {
-    case 'move':
-      newRect = { x: sr.x + dx, y: sr.y + dy, w: sr.w, h: sr.h }
-      break
-    case 'resize-se': newRect = { x: sr.x, y: sr.y, w: sr.w + dx, h: sr.h + dy }; break
-    case 'resize-sw': newRect = { x: sr.x + dx, y: sr.y, w: sr.w - dx, h: sr.h + dy }; break
-    case 'resize-ne': newRect = { x: sr.x, y: sr.y + dy, w: sr.w + dx, h: sr.h - dy }; break
-    case 'resize-nw': newRect = { x: sr.x + dx, y: sr.y + dy, w: sr.w - dx, h: sr.h - dy }; break
-    case 'resize-n': newRect = { x: sr.x, y: sr.y + dy, w: sr.w, h: sr.h - dy }; break
-    case 'resize-s': newRect = { x: sr.x, y: sr.y, w: sr.w, h: sr.h + dy }; break
-    case 'resize-e': newRect = { x: sr.x, y: sr.y, w: sr.w + dx, h: sr.h }; break
-    case 'resize-w': newRect = { x: sr.x + dx, y: sr.y, w: sr.w - dx, h: sr.h }; break
-    default: return
+  if (!dragMode.value) {
+    // Not dragging — update cursor based on hover position
+    if (coords) {
+      const hit = hitTest(coords.x, coords.y)
+      if (hit === 'move') cursorStyle.value = 'move'
+      else if (hit === 'resize-se' || hit === 'resize-nw') cursorStyle.value = 'nwse-resize'
+      else if (hit === 'resize-ne' || hit === 'resize-sw') cursorStyle.value = 'nesw-resize'
+      else if (hit === 'resize-n' || hit === 'resize-s') cursorStyle.value = 'ns-resize'
+      else if (hit === 'resize-e' || hit === 'resize-w') cursorStyle.value = 'ew-resize'
+      else cursorStyle.value = 'crosshair'
+    }
+    return
   }
 
-  if (newRect.w < 0) { newRect.x += newRect.w; newRect.w = -newRect.w }
-  if (newRect.h < 0) { newRect.y += newRect.h; newRect.h = -newRect.h }
+  if (!coords) return
 
-  editor.setCropRect(newRect)
-  editor.render()
+  if (dragMode.value === 'create') {
+    // Create mode: compute bounding box from start point to current mouse
+    const x = Math.min(dragStart.value.x, coords.x)
+    const y = Math.min(dragStart.value.y, coords.y)
+    const w = Math.abs(coords.x - dragStart.value.x)
+    const h = Math.abs(coords.y - dragStart.value.y)
+    // Clamp to image bounds during drag
+    state.cropRect = editor.clampCropToBounds({ x, y, w, h })
+  } else {
+    // Move or resize an existing rect
+    const dx = coords.x - dragStart.value.x
+    const dy = coords.y - dragStart.value.y
+    const sr = dragStartRect.value
+
+    if (dragMode.value === 'move') {
+      let newRect = editor.clampCropToBounds({ x: sr.x + dx, y: sr.y + dy, w: sr.w, h: sr.h })
+      // Re-align drag start so further movement stays proportional
+      dragStart.value = { x: coords.x - (sr.x + dx - newRect.x), y: coords.y - (sr.y + dy - newRect.y) }
+      dragStartRect.value = newRect
+      state.cropRect = newRect
+    } else {
+      let newRect = { x: sr.x, y: sr.y, w: sr.w, h: sr.h }
+      const m = dragMode.value
+
+      if (m === 'resize-se') { newRect.w = sr.w + dx; newRect.h = sr.h + dy }
+      else if (m === 'resize-sw') { newRect.x = sr.x + dx; newRect.w = sr.w - dx; newRect.h = sr.h + dy }
+      else if (m === 'resize-ne') { newRect.y = sr.y + dy; newRect.w = sr.w + dx; newRect.h = sr.h - dy }
+      else if (m === 'resize-nw') { newRect.x = sr.x + dx; newRect.y = sr.y + dy; newRect.w = sr.w - dx; newRect.h = sr.h - dy }
+      else if (m === 'resize-n')  { newRect.y = sr.y + dy; newRect.h = sr.h - dy }
+      else if (m === 'resize-s')  { newRect.h = sr.h + dy }
+      else if (m === 'resize-e')  { newRect.w = sr.w + dx }
+      else if (m === 'resize-w')  { newRect.x = sr.x + dx; newRect.w = sr.w - dx }
+
+      if (newRect.w < 0) { newRect.x += newRect.w; newRect.w = -newRect.w }
+      if (newRect.h < 0) { newRect.y += newRect.h; newRect.h = -newRect.h }
+
+      state.cropRect = editor.clampCropToBounds(newRect)
+    }
+  }
+  scheduleRender()
 }
 
 function onCropMouseUp() {
-  drag.value = null
+  // Finalize: apply min-10 clamp via setCropRect
+  if (state.cropRect) {
+    editor.setCropRect(state.cropRect)
+  }
+  dragMode.value = null
 }
 
 async function onConfirm() {
@@ -171,7 +251,7 @@ function onCancel() {
 
 <template>
   <Teleport to="body">
-    <div v-if="show" class="editor-modal" @click.self="onCancel">
+    <div v-if="show" class="editor-modal">
       <div class="editor-dialog">
         <div class="editor-header">
           <span>图片编辑</span>
@@ -194,7 +274,7 @@ function onCancel() {
           <div ref="containerRef" class="editor-preview">
             <canvas
               ref="previewCanvas"
-              :style="{ cursor: state.cropEnabled ? 'crosshair' : 'default' }"
+              :style="{ cursor: state.cropEnabled ? cursorStyle : 'default' }"
               @mousedown="onCropMouseDown"
               @mousemove="onCropMouseMove"
               @mouseup="onCropMouseUp"
@@ -232,12 +312,12 @@ function onCancel() {
 
 <style scoped>
 .editor-modal {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.6);
-  display: flex; align-items: center; justify-content: center; z-index: 1000;
+  position: fixed; inset: 0; background: var(--bg, #fff);
+  display: flex; z-index: 1000;
 }
 .editor-dialog {
-  background: var(--bg, #fff); border-radius: 12px;
-  width: 90vw; max-width: 1100px; max-height: 90vh;
+  background: var(--bg, #fff);
+  width: 100vw; height: 100vh;
   display: flex; flex-direction: column; overflow: hidden;
 }
 .editor-header {

@@ -67,8 +67,18 @@ async function onExport(config: ExportConfig) {
     boldGridWidth: config.boldGridWidth,
   }
 
+  // Compact grid data: flat row-major array of colorIndex | null
+  const grid = beadStore.beadGrid
+  const gridData: (number | null)[] = []
+  for (let r = 0; r < grid.rows; r++) {
+    for (let c = 0; c < grid.cols; c++) {
+      gridData.push(grid.cells[r][c].colorIndex)
+    }
+  }
+
   const projectJson = JSON.stringify({
-    version: 1,
+    version: 2,
+    grid: { rows: grid.rows, cols: grid.cols, data: gridData },
     settings: beadStore.settings,
     palette: {
       brand: paletteStore.selectedBrand,
@@ -124,7 +134,28 @@ async function onImportFromDrawing() {
           paletteStore.addCustomColor({ hex: c.hex, name: c.name })
         }
       }
-      if (result.imageBytes && result.imageBytes.length > 0) {
+
+      // Restore grid data directly if present (v2+), preserving brush edits
+      if (project.grid && project.grid.data && project.grid.rows && project.grid.cols) {
+        const { rows, cols, data } = project.grid
+        const cells = Array.from({ length: rows }, (_, r) =>
+          Array.from({ length: cols }, (_, c) => ({
+            row: r,
+            col: c,
+            colorIndex: data[r * cols + c] as number | null,
+          })),
+        )
+        beadStore.beadGrid = {
+          rows,
+          cols,
+          cells,
+          palette: paletteStore.palette,
+          imageCols: cols,
+          imageRows: rows,
+        }
+        brushStore.resetHistory()
+      } else if (result.imageBytes && result.imageBytes.length > 0) {
+        // v1 fallback: re-process original image
         const blob = new Blob([result.imageBytes as unknown as BlobPart], { type: file.type || 'image/png' })
         imageFile.value = new File([blob], 'restored.png', { type: blob.type })
         triggerProcess()
