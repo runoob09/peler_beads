@@ -196,9 +196,10 @@ export const useBrushStore = defineStore('brush', () => {
     const visited = new Set<string>()
     const result: { row: number; col: number }[] = []
     const queue: { row: number; col: number }[] = [{ row: startRow, col: startCol }]
+    let head = 0
 
-    while (queue.length > 0) {
-      const { row, col } = queue.shift()!
+    while (head < queue.length) {
+      const { row, col } = queue[head++]
       const key = `${row},${col}`
       if (visited.has(key)) continue
       if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) continue
