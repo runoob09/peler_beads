@@ -86,12 +86,33 @@ export const useBeadStore = defineStore('bead', () => {
     }
   }
 
+  function initEmptyGrid(rows: number, cols: number, palette: PaletteColor[]) {
+    const cells: BeadCell[][] = Array.from({ length: rows }, (_, r) =>
+      Array.from({ length: cols }, (_, c) => ({
+        row: r,
+        col: c,
+        colorIndex: null as number | null,
+      })),
+    )
+    beadGrid.value = {
+      rows,
+      cols,
+      cells,
+      palette,
+      imageCols: cols,
+      imageRows: rows,
+    }
+    progress.value = 0
+    error.value = null
+  }
+
   return {
     beadGrid,
     progress,
     error,
     settings,
     process,
+    initEmptyGrid,
   }
 })
 

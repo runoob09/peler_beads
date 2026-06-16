@@ -16,6 +16,7 @@ const paletteStore = usePaletteStore()
 const beadStore = useBeadStore()
 const brushStore = useBrushStore()
 
+const creationMode = ref<'image' | 'blank'>('image')
 const imageFile = ref<File | null>(null)
 const showEditor = ref(false)
 
@@ -55,6 +56,12 @@ function triggerProcess() {
 }
 
 watch(() => paletteStore.selectedBrand, () => { triggerProcess() })
+
+function onCreateBlank() {
+  const s = beadStore.settings
+  beadStore.initEmptyGrid(s.gridRows, s.gridCols, paletteStore.palette)
+  brushStore.brushMode = true
+}
 
 async function onExport(config: ExportConfig) {
   if (!beadStore.beadGrid) return
@@ -177,14 +184,21 @@ async function onImportFromDrawing() {
       :brandNames="paletteStore.brandNames"
       :selectedBrand="paletteStore.selectedBrand"
       :palette="paletteStore.palette"
+      :creationMode="creationMode"
       @upload="onUpload"
       @update:settings="onUpdateSettings"
       @remove-color="onRemoveColor"
       @export="onExport"
       @import-drawing="onImportFromDrawing"
+      @update:creationMode="creationMode = $event"
+      @create-blank="onCreateBlank"
     />
     <div class="preview-wrapper">
       <div v-if="beadStore.error" class="error-banner">{{ beadStore.error }}</div>
+      <div v-if="!beadStore.beadGrid && beadStore.progress === 0" class="empty-state">
+        <p v-if="creationMode === 'image'">上传图片开始</p>
+        <p v-else>点击「创建画布」开始自由创作</p>
+      </div>
       <BeadPreview />
     </div>
     <ColorLegend />
@@ -203,4 +217,5 @@ async function onImportFromDrawing() {
 .preview-wrapper { flex: 1; display: flex; flex-direction: column; position: relative; }
 .error-banner { background: #fee2e2; color: #dc2626; padding: 8px 16px; font-size: 13px; }
 .loading-bar { background: var(--accent-bg, rgba(170, 59, 255, 0.1)); color: var(--accent, #aa3bff); padding: 4px 16px; font-size: 12px; }
+.empty-state { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--text); opacity: 0.5; font-size: 16px; }
 </style>
