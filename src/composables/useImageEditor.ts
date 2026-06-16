@@ -86,27 +86,35 @@ export function useImageEditor() {
   }
 
   function rotate(direction: 'cw' | 'ccw'): void {
+    const oldRotation = state.rotation
     const delta = direction === 'cw' ? 90 : -90
     state.rotation = (((state.rotation + delta) % 360) + 360) % 360 as 0 | 90 | 180 | 270
 
     if (state.cropRect && state.sourceImage) {
-      const isVertical = state.rotation === 90 || state.rotation === 270
-      const maxW = state.sourceImage.naturalWidth
-      const maxH = state.sourceImage.naturalHeight
+      const imgW = state.sourceImage.naturalWidth
+      const imgH = state.sourceImage.naturalHeight
 
-      if (isVertical) {
-        // After rotation, width and height swap
-        const newW = state.cropRect.h
-        const newH = state.cropRect.w
-        // Map old x,y to new position in rotated coordinate space
-        const newX = clamp(maxH - state.cropRect.y - state.cropRect.h, 0, maxH - 10)
-        const newY = clamp(state.cropRect.x, 0, maxW - 10)
-        state.cropRect = { x: newX, y: newY, w: clamp(newW, 10, maxH - newX), h: clamp(newH, 10, maxW - newY) }
+      // Determine effective width/height of the image BEFORE this rotation
+      const wasVertical = oldRotation === 90 || oldRotation === 270
+      const effW = wasVertical ? imgH : imgW
+      const effH = wasVertical ? imgW : imgH
+
+      if (delta === 90) {
+        // CW: x' = effH - y - h, y' = x, w' = h, h' = w
+        state.cropRect = {
+          x: clamp(effH - state.cropRect.y - state.cropRect.h, 0, effH - 10),
+          y: clamp(state.cropRect.x, 0, effW - 10),
+          w: state.cropRect.h,
+          h: state.cropRect.w,
+        }
       } else {
-        // Rotation to 0/180: width and height stay the same
-        const newX = clamp(state.cropRect.y, 0, maxH - 10)
-        const newY = clamp(maxW - state.cropRect.x - state.cropRect.w, 0, maxH - 10)
-        state.cropRect = { x: newX, y: newY, w: clamp(state.cropRect.w, 10, maxW - newX), h: clamp(state.cropRect.h, 10, maxH - newY) }
+        // CCW (-90): x' = y, y' = effW - x - w, w' = h, h' = w
+        state.cropRect = {
+          x: clamp(state.cropRect.y, 0, effH - 10),
+          y: clamp(effW - state.cropRect.x - state.cropRect.w, 0, effW - 10),
+          w: state.cropRect.h,
+          h: state.cropRect.w,
+        }
       }
     }
   }

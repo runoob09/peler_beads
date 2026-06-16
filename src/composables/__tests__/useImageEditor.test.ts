@@ -111,6 +111,46 @@ describe('useImageEditor', () => {
       expect(editor.state.cropRect!.w).toBe(h0)
       expect(editor.state.cropRect!.h).toBe(w0)
     })
+
+    it('handles multi-step rotation: 0→90→180 returns correct crop position', async () => {
+      await editor.loadImage(makeFile())
+      // Image is 100x80 (based on the mock)
+      const w = editor.state.sourceImage!.naturalWidth
+      const h = editor.state.sourceImage!.naturalHeight
+      editor.setCropRect({ x: 10, y: 10, w: 40, h: 30 })
+      editor.rotate('cw')  // 0→90
+      editor.rotate('cw')  // 90→180
+      // After 180°, the crop should be at the opposite corner with same dimensions
+      expect(editor.state.cropRect!.w).toBe(40)
+      expect(editor.state.cropRect!.h).toBe(30)
+      expect(editor.state.cropRect!.x).toBe(w - 10 - 40)
+      expect(editor.state.cropRect!.y).toBe(h - 10 - 30)
+    })
+
+    it('handles full rotation cycle: 0→90→180→270→0 restores original crop', async () => {
+      await editor.loadImage(makeFile())
+      editor.setCropRect({ x: 10, y: 10, w: 40, h: 30 })
+      editor.rotate('cw')
+      editor.rotate('cw')
+      editor.rotate('cw')
+      editor.rotate('cw')
+      expect(editor.state.cropRect).toEqual({ x: 10, y: 10, w: 40, h: 30 })
+      expect(editor.state.rotation).toBe(0)
+    })
+
+    it('setCropEnabled toggles crop mode', async () => {
+      await editor.loadImage(makeFile())
+      expect(editor.state.cropEnabled).toBe(false)
+      editor.setCropEnabled(true)
+      expect(editor.state.cropEnabled).toBe(true)
+      editor.setCropEnabled(false)
+      expect(editor.state.cropEnabled).toBe(false)
+    })
+
+    it('calling setCropRect before loadImage is a no-op', () => {
+      editor.setCropRect({ x: 0, y: 0, w: 50, h: 50 })
+      expect(editor.state.cropRect).toBeNull()
+    })
   })
 
   describe('flip', () => {
