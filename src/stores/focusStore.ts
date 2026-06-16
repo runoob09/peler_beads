@@ -63,25 +63,13 @@ export const useFocusStore = defineStore('focus', () => {
     return Math.round((completed / blocks.value.length) * 100)
   })
 
-  const completedColors = computed(() => {
-    const done = new Set<number>()
-    for (const b of blocks.value) {
-      if (b.status === 'completed') done.add(b.colorIndex)
-    }
-    return blocks.value.filter(
-      (b) => done.has(b.colorIndex) && b.status === 'completed',
-    )
-  })
+  const completedColors = computed(() =>
+    blocks.value.filter((b) => b.status === 'completed'),
+  )
 
-  const pendingColors = computed(() => {
-    const done = new Set<number>()
-    for (const b of blocks.value) {
-      if (b.status === 'completed') done.add(b.colorIndex)
-    }
-    return blocks.value.filter(
-      (b) => !done.has(b.colorIndex) || b.status !== 'completed',
-    )
-  })
+  const pendingColors = computed(() =>
+    blocks.value.filter((b) => b.status !== 'completed'),
+  )
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null
 
