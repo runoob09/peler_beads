@@ -349,4 +349,72 @@ describe('brushStore', () => {
       expect(brush.activeColorIndex).toBeNull()
     })
   })
+
+  describe('isStroking', () => {
+    it('is false by default', () => {
+      const brush = useBrushStore()
+      expect(brush.isStroking).toBe(false)
+    })
+
+    it('becomes true after beginStroke', () => {
+      const brush = useBrushStore()
+      brush.beginStroke()
+      expect(brush.isStroking).toBe(true)
+    })
+
+    it('becomes false after endStroke', () => {
+      const brush = useBrushStore()
+      brush.beginStroke()
+      brush.endStroke()
+      expect(brush.isStroking).toBe(false)
+    })
+  })
+
+  describe('continueStroke return value', () => {
+    function setupGrid() {
+      const bead = useBeadStore()
+      bead.beadGrid = makeTestBeadGrid()
+      const brush = useBrushStore()
+      brush.setActiveColor(2)
+      brush.beginStroke()
+      return { bead, brush }
+    }
+
+    it('returns true when cell is successfully painted', () => {
+      const { brush } = setupGrid()
+      expect(brush.continueStroke(0, 0)).toBe(true)
+    })
+
+    it('returns false when activeColorIndex is null', () => {
+      const bead = useBeadStore()
+      bead.beadGrid = makeTestBeadGrid()
+      const brush = useBrushStore()
+      brush.beginStroke()
+      expect(brush.continueStroke(0, 0)).toBe(false)
+    })
+
+    it('returns false when beadGrid is null', () => {
+      const brush = useBrushStore()
+      brush.setActiveColor(2)
+      brush.beginStroke()
+      expect(brush.continueStroke(0, 0)).toBe(false)
+    })
+
+    it('returns false for out-of-bounds cell', () => {
+      const { brush } = setupGrid()
+      expect(brush.continueStroke(999, 999)).toBe(false)
+    })
+
+    it('returns false when cell already has the active color', () => {
+      const { brush } = setupGrid()
+      brush.continueStroke(0, 0) // paint White(0) -> Red(2)
+      expect(brush.continueStroke(0, 0)).toBe(false) // same cell, now Red==Red
+    })
+
+    it('returns false for duplicate cell within same stroke', () => {
+      const { brush } = setupGrid()
+      brush.continueStroke(0, 1) // paint (0,1) Red
+      expect(brush.continueStroke(0, 1)).toBe(false) // dedup
+    })
+  })
 })

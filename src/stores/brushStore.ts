@@ -17,6 +17,7 @@ export const useBrushStore = defineStore('brush', () => {
   const activeColorIndex = ref<number | null>(null)
   const undoStack = ref<UndoEntry[]>([])
   const redoStack = ref<UndoEntry[]>([])
+  const isStroking = ref(false)
 
   // Per-stroke accumulators (not reactive — only used during a stroke)
   let strokeCells: CellChange[] = []
@@ -44,29 +45,32 @@ export const useBrushStore = defineStore('brush', () => {
   }
 
   function beginStroke() {
+    isStroking.value = true
     strokeCells = []
     strokeCellKeys = new Set()
   }
 
-  function continueStroke(row: number, col: number) {
+  function continueStroke(row: number, col: number): boolean {
     const beadStore = useBeadStore()
     const grid = beadStore.beadGrid
-    if (!grid || activeColorIndex.value === null) return
-    if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return
+    if (!grid || activeColorIndex.value === null) return false
+    if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return false
 
     const key = `${row},${col}`
-    if (strokeCellKeys.has(key)) return
+    if (strokeCellKeys.has(key)) return false
 
     const cell = grid.cells[row][col]
     const oldColorIndex = cell.colorIndex
-    if (oldColorIndex === activeColorIndex.value) return
+    if (oldColorIndex === activeColorIndex.value) return false
 
     strokeCellKeys.add(key)
     strokeCells.push({ row, col, oldColorIndex })
     cell.colorIndex = activeColorIndex.value
+    return true
   }
 
   function endStroke() {
+    isStroking.value = false
     if (strokeCells.length === 0) return
     undoStack.value.push({ cells: [...strokeCells] })
     redoStack.value = []
@@ -115,11 +119,13 @@ export const useBrushStore = defineStore('brush', () => {
     redoStack.value = []
     brushMode.value = false
     activeColorIndex.value = null
+    isStroking.value = false
   }
 
   return {
     brushMode,
     activeColorIndex,
+    isStroking,
     undoStack,
     redoStack,
     toggleBrushMode,
