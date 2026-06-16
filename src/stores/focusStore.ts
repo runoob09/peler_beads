@@ -34,16 +34,18 @@ function hashString(s: string): string {
 function makeFingerprint(bead: ReturnType<typeof useBeadStore>): string {
   const grid = bead.beadGrid
   if (!grid) return ''
-  const counts: number[] = []
+  const counts = new Map<number, number>()
   for (const row of grid.cells) {
     for (const cell of row) {
       const idx = cell.colorIndex ?? -1
-      counts[idx] = (counts[idx] ?? 0) + 1
+      counts.set(idx, (counts.get(idx) ?? 0) + 1)
     }
   }
-  return hashString(
-    `${grid.rows}:${grid.cols}:${JSON.stringify(counts)}`,
-  )
+  const obj: Record<string, number> = {}
+  for (const [k, v] of counts) {
+    obj[String(k)] = v
+  }
+  return hashString(`${grid.rows}:${grid.cols}:${JSON.stringify(obj)}`)
 }
 
 export const useFocusStore = defineStore('focus', () => {
@@ -142,7 +144,14 @@ export const useFocusStore = defineStore('focus', () => {
           block.completedAt = sb.completedAt
         }
       }
-      currentBlockIndex.value = saved.currentBlockIndex
+      // Clamp index and find first pending block
+      currentBlockIndex.value = Math.min(saved.currentBlockIndex, blocks.value.length - 1)
+      if (blocks.value[currentBlockIndex.value]?.status === 'completed') {
+        const firstPending = blocks.value.findIndex((b) => b.status !== 'completed')
+        if (firstPending !== -1) {
+          currentBlockIndex.value = firstPending
+        }
+      }
       totalElapsed.value = saved.totalElapsed
       return true
     } catch {
@@ -193,6 +202,7 @@ export const useFocusStore = defineStore('focus', () => {
   function completeBlock() {
     const block = currentBlock.value
     if (!block) return
+    if (block.status === 'completed') return
 
     block.status = 'completed'
     block.completedAt = Date.now()
