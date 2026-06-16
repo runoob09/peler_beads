@@ -1,4 +1,3 @@
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'
 import type { BeadGrid } from '../types'
 import { renderGridToCanvas } from '../composables/useExport'
 import { embedInPdf } from './embedMetadata'
@@ -21,6 +20,7 @@ export async function generatePdf(
   imageBytes?: Uint8Array,
   imageType?: string,
 ): Promise<Uint8Array> {
+  const { PDFDocument, StandardFonts, rgb } = await import('pdf-lib')
   const doc = await PDFDocument.create()
   const font = await doc.embedFont(StandardFonts.Helvetica)
   const boldFont = await doc.embedFont(StandardFonts.HelveticaBold)
