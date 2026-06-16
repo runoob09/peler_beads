@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useBeadStore } from '../stores/beadStore'
 import { useBrushStore } from '../stores/brushStore'
 import { usePaletteStore } from '../stores/paletteStore'
-import { renderGridToCanvas } from '../composables/useExport'
+import { renderAllCells, drawGridLines } from '../composables/useExport'
 
 const beadStore = useBeadStore()
 const brushStore = useBrushStore()
@@ -34,6 +34,13 @@ const zoomPercent = computed(() => Math.round(zoom.value * 100))
 const cursorStyle = computed(() => {
   return brushStore.brushMode ? 'crosshair' : 'default'
 })
+
+// Persistent offscreen canvas for cell colors (no grid lines)
+let offscreenCanvas: HTMLCanvasElement | null = null
+let offscreenCtx: CanvasRenderingContext2D | null = null
+let needFullRender = true
+let renderRafId = 0
+const dirtyCells = new Set<string>()
 
 function swatchTextColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
@@ -67,31 +74,82 @@ function getCellFromEvent(event: MouseEvent): { row: number; col: number } | nul
   return null
 }
 
-function render() {
+function scheduleRender(forceFull = false) {
+  if (forceFull) needFullRender = true
+  if (renderRafId) return
+  renderRafId = requestAnimationFrame(() => {
+    renderRafId = 0
+    doRender()
+  })
+}
+
+function doRender() {
   if (!canvasRef.value || !beadStore.beadGrid) return
   const container = containerRef.value
   if (!container) return
 
   const maxW = container.clientWidth || 400
   const maxH = container.clientHeight || 400
-  cellSize.value = Math.floor(Math.min(maxW / beadStore.beadGrid.cols, maxH / beadStore.beadGrid.rows))
+  const newCellSize = Math.floor(Math.min(maxW / beadStore.beadGrid.cols, maxH / beadStore.beadGrid.rows))
+  const sizeChanged = newCellSize !== cellSize.value
+  cellSize.value = newCellSize
 
-  const rendered = renderGridToCanvas(beadStore.beadGrid, beadStore.settings.display.renderMode, cellSize.value, {
-    showGrid: beadStore.settings.display.showGrid,
-    gridLineColor: beadStore.settings.display.gridLineColor,
-    gridLineWidth: beadStore.settings.display.gridLineWidth,
-    boldGridInterval: beadStore.settings.display.boldGridInterval,
-    boldGridColor: beadStore.settings.display.boldGridColor,
-    boldGridWidth: beadStore.settings.display.boldGridWidth,
-  })
+  const grid = beadStore.beadGrid
+  const w = grid.cols * cellSize.value
+  const h = grid.rows * cellSize.value
 
-  canvasRef.value.width = rendered.width
-  canvasRef.value.height = rendered.height
-  canvasRef.value.style.width = rendered.width + 'px'
-  canvasRef.value.style.height = rendered.height + 'px'
+  if (!offscreenCanvas) {
+    offscreenCanvas = document.createElement('canvas')
+    offscreenCtx = offscreenCanvas.getContext('2d')
+    if (!offscreenCtx) return // no canvas support (e.g. test env)
+    needFullRender = true
+  }
+
+  if (sizeChanged || needFullRender) {
+    if (!offscreenCtx) return
+    offscreenCanvas.width = w
+    offscreenCanvas.height = h
+    offscreenCtx = offscreenCanvas.getContext('2d')!
+    offscreenCtx.clearRect(0, 0, w, h)
+    const mode = beadStore.settings.display.renderMode
+    renderAllCells(offscreenCtx, grid, cellSize.value, mode, false)
+    needFullRender = false
+    dirtyCells.clear()
+  } else if (offscreenCtx && dirtyCells.size > 0) {
+    for (const key of dirtyCells) {
+      const [r, c] = key.split(',').map(Number)
+      if (r < 0 || r >= grid.rows || c < 0 || c >= grid.cols) continue
+      const x = c * cellSize.value
+      const y = r * cellSize.value
+      offscreenCtx.clearRect(x, y, cellSize.value, cellSize.value)
+      const colorIndex = grid.cells[r][c].colorIndex
+      if (colorIndex !== null) {
+        offscreenCtx.fillStyle = grid.palette[colorIndex].hex
+        offscreenCtx.fillRect(x, y, cellSize.value, cellSize.value)
+      }
+    }
+    dirtyCells.clear()
+  }
+
+  if (!offscreenCtx) return
+
+  canvasRef.value.width = w
+  canvasRef.value.height = h
+  canvasRef.value.style.width = w + 'px'
+  canvasRef.value.style.height = h + 'px'
   const ctx = canvasRef.value.getContext('2d')
   if (!ctx) return
-  ctx.drawImage(rendered, 0, 0)
+  ctx.drawImage(offscreenCanvas!, 0, 0)
+
+  const d = beadStore.settings.display
+  drawGridLines(ctx, grid.cols, grid.rows, cellSize.value, {
+    showGrid: d.showGrid,
+    gridLineColor: d.gridLineColor,
+    gridLineWidth: d.gridLineWidth,
+    boldGridInterval: d.boldGridInterval,
+    boldGridColor: d.boldGridColor,
+    boldGridWidth: d.boldGridWidth,
+  })
 }
 
 function onMouseDown(event: MouseEvent) {
@@ -100,8 +158,10 @@ function onMouseDown(event: MouseEvent) {
     brushStore.beginStroke()
     const cell = getCellFromEvent(event)
     if (cell) {
-      brushStore.continueStroke(cell.row, cell.col)
-      nextTick(render)
+      if (brushStore.continueStroke(cell.row, cell.col)) {
+        dirtyCells.add(`${cell.row},${cell.col}`)
+      }
+      scheduleRender()
     }
   } else {
     onPanStart(event)
@@ -114,8 +174,10 @@ function onMouseMove(event: MouseEvent) {
     const cell = getCellFromEvent(event)
     if (cell) {
       hoveredCell.value = cell
-      brushStore.continueStroke(cell.row, cell.col)
-      nextTick(render)
+      if (brushStore.continueStroke(cell.row, cell.col)) {
+        dirtyCells.add(`${cell.row},${cell.col}`)
+      }
+      scheduleRender()
     }
     return
   }
@@ -146,11 +208,11 @@ function onKeyDown(event: KeyboardEvent) {
     } else {
       brushStore.undo()
     }
-    nextTick(render)
+    scheduleRender(true)
   } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
     event.preventDefault()
     brushStore.redo()
-    nextTick(render)
+    scheduleRender(true)
   }
 }
 
@@ -217,13 +279,13 @@ function onDocumentMouseUp() {
   if (isPainting.value) {
     isPainting.value = false
     brushStore.endStroke()
-    nextTick(render)
+    scheduleRender()
   }
   onPanEnd()
 }
 
 onMounted(() => {
-  nextTick(render)
+  scheduleRender(true)
   document.addEventListener('mousemove', onPanMove)
   document.addEventListener('mouseup', onDocumentMouseUp)
   document.addEventListener('keydown', onKeyDown)
@@ -233,10 +295,15 @@ onUnmounted(() => {
   document.removeEventListener('mouseup', onDocumentMouseUp)
   document.removeEventListener('keydown', onKeyDown)
 })
+// Full re-render when grid identity changes (new image loaded)
 watch(
-  () => [beadStore.beadGrid, beadStore.settings.display],
-  () => { nextTick(render) },
-  { deep: true },
+  () => beadStore.beadGrid,
+  () => { if (beadStore.beadGrid) scheduleRender(true) },
+)
+// Full re-render when display settings change
+watch(
+  () => beadStore.settings.display,
+  () => { if (beadStore.beadGrid) scheduleRender(true) },
 )
 </script>
 
