@@ -4,7 +4,7 @@ import SizeSelector from '../SizeSelector.vue'
 import { BOARD_PRESETS } from '../../data/boardPresets'
 
 describe('SizeSelector', () => {
-  it('renders preset buttons', () => {
+  it('renders preset dropdown options', () => {
     const wrapper = mount(SizeSelector, {
       props: { modelValue: { cols: 29, rows: 29, keepAspectRatio: true } },
     })
@@ -49,7 +49,8 @@ describe('SizeSelector board presets', () => {
       props: { modelValue: { cols: 29, rows: 29, keepAspectRatio: true } },
     })
     const select = wrapper.find('select.preset-select')
-    await select.setValue('1')
+    const smallIdx = BOARD_PRESETS.findIndex(p => p.label === '小方板 14×14')
+    await select.setValue(String(smallIdx))
     const emitted = wrapper.emitted('update:modelValue')! as any
     expect(emitted[0][0].cols).toBe(14)
     expect(emitted[0][0].rows).toBe(14)
@@ -60,7 +61,8 @@ describe('SizeSelector board presets', () => {
       props: { modelValue: { cols: 29, rows: 29, keepAspectRatio: true } },
     })
     const select = wrapper.find('select.preset-select')
-    await select.setValue('0')
+    const miniIdx = BOARD_PRESETS.findIndex(p => p.label === '迷你板 10×10')
+    await select.setValue(String(miniIdx))
     const inputs = wrapper.findAll('input[type="number"]')
     for (const input of inputs) {
       expect((input.element as HTMLInputElement).disabled).toBe(true)
