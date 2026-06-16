@@ -6,6 +6,7 @@ import { usePaletteStore } from '../stores/paletteStore'
 import { renderAllCells, drawGridLines, drawNullCellMark, getTextColor } from '../composables/useExport'
 import { getCellFromEvent } from '../composables/useGridInteraction'
 import { useZoomPan } from '../composables/useZoomPan'
+import { useCellSize } from '../composables/useCellSize'
 
 const beadStore = useBeadStore()
 const brushStore = useBrushStore()
@@ -14,7 +15,7 @@ const paletteStore = usePaletteStore()
 const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
 const hoveredCell = ref<{ row: number; col: number } | null>(null)
-const cellSize = ref(20)
+const { cellSize, recompute } = useCellSize(containerRef, beadStore.beadGrid)
 
 const { zoom, panX, panY, isPanning, panStart, panStartPos, transformStyle, onWheel, onPanStart, onPanMove, onPanEnd } = useZoomPan()
 
@@ -77,11 +78,9 @@ function doRender() {
   const container = containerRef.value
   if (!container) return
 
-  const maxW = container.clientWidth || 400
-  const maxH = container.clientHeight || 400
-  const newCellSize = Math.floor(Math.min(maxW / beadStore.beadGrid.cols, maxH / beadStore.beadGrid.rows))
-  const sizeChanged = newCellSize !== cellSize.value
-  cellSize.value = newCellSize
+  const prevSize = cellSize.value
+  recompute()
+  const sizeChanged = cellSize.value !== prevSize
 
   const grid = beadStore.beadGrid
   const w = grid.cols * cellSize.value

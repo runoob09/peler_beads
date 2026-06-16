@@ -5,13 +5,14 @@ import { useFocusStore } from '../../stores/focusStore'
 import { renderAllCells, drawGridLines } from '../../composables/useExport'
 import { getCellFromEvent } from '../../composables/useGridInteraction'
 import { useZoomPan } from '../../composables/useZoomPan'
+import { useCellSize } from '../../composables/useCellSize'
 
 const beadStore = useBeadStore()
 const focusStore = useFocusStore()
 
 const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
-const cellSize = ref(20)
+const { cellSize, recompute } = useCellSize(containerRef, beadStore.beadGrid)
 
 function updateCanvasTransform(_px: number, _py: number, _z: number) {
   if (canvasRef.value) {
@@ -138,11 +139,9 @@ function setup() {
   if (!canvasRef.value || !beadStore.beadGrid) return
   const container = containerRef.value
   if (!container) return
-  const maxW = container.clientWidth || 400
-  const maxH = container.clientHeight || 400
-  const newCellSize = Math.floor(Math.min(maxW / beadStore.beadGrid.cols, maxH / beadStore.beadGrid.rows))
-  const sizeChanged = newCellSize !== cellSize.value
-  cellSize.value = newCellSize
+  const prevSize = cellSize.value
+  recompute()
+  const sizeChanged = cellSize.value !== prevSize
 
   const w = beadStore.beadGrid.cols * cellSize.value
   const h = beadStore.beadGrid.rows * cellSize.value
