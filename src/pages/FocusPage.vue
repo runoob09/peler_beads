@@ -3,6 +3,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFocusStore } from '../stores/focusStore'
+import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts'
 import { useTimer } from '../composables/useTimer'
 import FocusToolbar from '../components/focus/FocusToolbar.vue'
 import FocusGrid from '../components/focus/FocusGrid.vue'
@@ -57,24 +58,11 @@ function onToggleTimer() {
   }
 }
 
-function onKeyDown(event: KeyboardEvent) {
-  if (event.key === ' ' && !showExitConfirm.value) {
-    event.preventDefault()
-    focusStore.completeBlock()
-  } else if (event.key === 'ArrowLeft') {
-    focusStore.prevBlock()
-  } else if (event.key === 'ArrowRight') {
-    focusStore.nextBlock()
-  }
-}
-
-onMounted(() => {
-  document.addEventListener('keydown', onKeyDown)
-})
-
-onUnmounted(() => {
-  document.removeEventListener('keydown', onKeyDown)
-})
+useKeyboardShortcuts([
+  { key: ' ', handler: () => { if (!showExitConfirm.value) focusStore.completeBlock() } },
+  { key: 'ArrowLeft', handler: () => focusStore.prevBlock() },
+  { key: 'ArrowRight', handler: () => focusStore.nextBlock() },
+])
 </script>
 
 <template>

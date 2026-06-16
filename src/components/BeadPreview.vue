@@ -7,6 +7,7 @@ import { renderAllCells, drawGridLines, drawNullCellMark, getTextColor } from '.
 import { getCellFromEvent } from '../composables/useGridInteraction'
 import { useZoomPan } from '../composables/useZoomPan'
 import { useCellSize } from '../composables/useCellSize'
+import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts'
 
 const beadStore = useBeadStore()
 const brushStore = useBrushStore()
@@ -241,21 +242,11 @@ function onMouseLeave() {
   hoveredCell.value = null
 }
 
-function onKeyDown(event: KeyboardEvent) {
-  if ((event.ctrlKey || event.metaKey) && event.key === 'z') {
-    event.preventDefault()
-    if (event.shiftKey) {
-      brushStore.redo()
-    } else {
-      brushStore.undo()
-    }
-    scheduleRender(true)
-  } else if ((event.ctrlKey || event.metaKey) && event.key === 'y') {
-    event.preventDefault()
-    brushStore.redo()
-    scheduleRender(true)
-  }
-}
+useKeyboardShortcuts([
+  { key: 'z', ctrl: true, handler: () => { brushStore.undo(); scheduleRender(true) } },
+  { key: 'z', ctrl: true, shift: true, handler: () => { brushStore.redo(); scheduleRender(true) } },
+  { key: 'y', ctrl: true, handler: () => { brushStore.redo(); scheduleRender(true) } },
+])
 
 const hoveredColor = computed(() => {
   if (!hoveredCell.value || !beadStore.beadGrid) return null
@@ -292,7 +283,6 @@ function onDocumentMouseUp() {
 onMounted(() => {
   scheduleRender(true)
   document.addEventListener('mouseup', onDocumentMouseUp)
-  document.addEventListener('keydown', onKeyDown)
   document.addEventListener('keydown', onKeyDownSelect)
   document.addEventListener('keyup', onKeyUpSelect)
 })
@@ -300,7 +290,6 @@ onUnmounted(() => {
   cancelAnimationFrame(renderRafId)
   renderRafId = 0
   document.removeEventListener('mouseup', onDocumentMouseUp)
-  document.removeEventListener('keydown', onKeyDown)
   document.removeEventListener('keydown', onKeyDownSelect)
   document.removeEventListener('keyup', onKeyUpSelect)
 })
