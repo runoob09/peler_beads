@@ -47,7 +47,7 @@ function onKeyDownSelect(e: KeyboardEvent) {
 function onKeyUpSelect(e: KeyboardEvent) {
   if (e.key === 'Shift') {
     shiftHeld = false
-    if (brushStore.selectStart.value) {
+    if (brushStore.selectStart) {
       brushStore.cancelSelect()
       scheduleRender(true)
     }
@@ -174,7 +174,7 @@ function doRender() {
 
   // Draw rectangle select preview
   const rect = brushStore.previewRect
-  if (rect && brushStore.selectStart.value) {
+  if (rect && brushStore.selectStart) {
     const rr1 = Math.min(rect.r1, rect.r2)
     const rr2 = Math.max(rect.r1, rect.r2)
     const cc1 = Math.min(rect.c1, rect.c2)
@@ -197,13 +197,13 @@ function onMouseDown(event: MouseEvent) {
     if (shiftHeld) {
       const cell = getCellFromEvent(event)
       if (!cell) return
-      if (!brushStore.selectStart.value) {
+      if (!brushStore.selectStart) {
         brushStore.beginSelect(cell.row, cell.col)
         scheduleRender(true)
       } else {
         brushStore.completeSelect(
-          brushStore.selectStart.value.row,
-          brushStore.selectStart.value.col,
+          brushStore.selectStart.row,
+          brushStore.selectStart.col,
           cell.row,
           cell.col,
         )
@@ -231,7 +231,7 @@ function onMouseMove(event: MouseEvent) {
   if (!beadStore.beadGrid || !canvasRef.value) return
 
   // Shift-rectangle preview
-  if (shiftHeld && brushStore.selectStart.value) {
+  if (shiftHeld && brushStore.selectStart) {
     const cell = getCellFromEvent(event)
     if (cell) {
       brushStore.updatePreview(cell.row, cell.col)
