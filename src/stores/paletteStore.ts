@@ -3,15 +3,14 @@ import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { PaletteColor } from '../types'
 import { getBrandNames, getBrandColors, type ColorItem } from '../data/palettes'
-import { hexToRgb, rgbToLab } from '../utils/colorSpace'
+import { cachedRgbToLab } from '../utils/colorSpace'
 
 export interface PaletteColorInternal extends PaletteColor {
   lab: [number, number, number]
 }
 
 function computeLab(hex: string): [number, number, number] {
-  const [r, g, b] = hexToRgb(hex)
-  return rgbToLab(r, g, b)
+  return cachedRgbToLab(hex)
 }
 
 function generateId(): string {

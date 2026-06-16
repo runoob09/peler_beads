@@ -155,3 +155,15 @@ export function ciede2000(lab1: LAB, lab2: LAB): number {
 
   return Math.sqrt(termL * termL + termC * termC + termH * termH + RT * termC * termH)
 }
+
+const labCache = new Map<string, LAB>()
+
+export function cachedRgbToLab(hex: string): LAB {
+  const upper = hex.toUpperCase()
+  const cached = labCache.get(upper)
+  if (cached) return cached
+  const [r, g, b] = hexToRgb(upper)
+  const lab = rgbToLab(r, g, b)
+  labCache.set(upper, lab)
+  return lab
+}
