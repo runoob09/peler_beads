@@ -1,15 +1,16 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import { useBeadStore } from '../stores/beadStore'
-import DesignPage from '../pages/DesignPage.vue'
-import FocusPage from '../pages/FocusPage.vue'
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: '/', component: DesignPage },
+    {
+      path: '/',
+      component: () => import('../pages/DesignPage.vue'),
+    },
     {
       path: '/focus',
-      component: FocusPage,
+      component: () => import('../pages/FocusPage.vue'),
       beforeEnter: () => {
         const beadStore = useBeadStore()
         if (!beadStore.beadGrid) return '/'
