@@ -383,7 +383,7 @@ watch(
 }
 .preview-canvas-area {
   display: flex; flex-direction: column; align-items: center;
-  flex: 1; min-width: 0;
+  flex: 1; min-width: 0; overflow: hidden;
 }
 .preview-canvas-wrap { transform-origin: 0 0; }
 .tooltip { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; pointer-events: none; transform: translate(8px, -50%); z-index: 10; }
