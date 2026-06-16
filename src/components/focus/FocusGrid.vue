@@ -3,7 +3,8 @@ import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useBeadStore } from '../../stores/beadStore'
 import { useFocusStore } from '../../stores/focusStore'
 import { renderAllCells, drawGridLines } from '../../composables/useExport'
-import { clampZoom, getCellFromEvent } from '../../composables/useGridInteraction'
+import { getCellFromEvent } from '../../composables/useGridInteraction'
+import { useZoomPan } from '../../composables/useZoomPan'
 
 const beadStore = useBeadStore()
 const focusStore = useFocusStore()
@@ -12,12 +13,15 @@ const canvasRef = ref<HTMLCanvasElement>()
 const containerRef = ref<HTMLDivElement>()
 const cellSize = ref(20)
 
-const zoom = ref(1)
-const panX = ref(0)
-const panY = ref(0)
-const isPanning = ref(false)
-const panStart = ref({ x: 0, y: 0 })
-const panStartPos = ref({ x: 0, y: 0 })
+function updateCanvasTransform(_px: number, _py: number, _z: number) {
+  if (canvasRef.value) {
+    canvasRef.value.style.transform = `translate(${_px}px, ${_py}px) scale(${_z})`
+  }
+}
+
+const { zoom, panX, panY, isPanning, onWheel, onPanStart } = useZoomPan({
+  onTransformChanged: updateCanvasTransform,
+})
 
 let animRafId = 0
 let staticLayer: HTMLCanvasElement | null = null
@@ -151,11 +155,6 @@ function setup() {
   startAnimIfNeeded()
 }
 
-function updateTransform() {
-  if (!canvasRef.value) return
-  canvasRef.value.style.transform = `translate(${panX.value}px, ${panY.value}px) scale(${zoom.value})`
-}
-
 function onClick(event: MouseEvent) {
   const cell = resolveCell(event)
   if (!cell) return
@@ -164,38 +163,9 @@ function onClick(event: MouseEvent) {
   startAnimIfNeeded()
 }
 
-function onWheel(event: WheelEvent) {
-  if (!event.ctrlKey) return
-  event.preventDefault()
-  const delta = event.deltaY < 0 ? 0.1 : -0.1
-  const oldZoom = zoom.value
-  const newZoom = clampZoom(oldZoom + delta)
-  if (containerRef.value) {
-    const rect = containerRef.value.getBoundingClientRect()
-    const cx = event.clientX - rect.left
-    const cy = event.clientY - rect.top
-    const scale = newZoom / oldZoom
-    panX.value = cx - scale * (cx - panX.value)
-    panY.value = cy - scale * (cy - panY.value)
-  }
-  zoom.value = newZoom
-  updateTransform()
+function handleWheel(e: WheelEvent) {
+  if (containerRef.value) onWheel(e, containerRef.value)
 }
-
-function onPanStart(event: MouseEvent) {
-  isPanning.value = true
-  panStart.value = { x: event.clientX, y: event.clientY }
-  panStartPos.value = { x: panX.value, y: panY.value }
-}
-
-function onPanMove(event: MouseEvent) {
-  if (!isPanning.value) return
-  panX.value = panStartPos.value.x + (event.clientX - panStart.value.x)
-  panY.value = panStartPos.value.y + (event.clientY - panStart.value.y)
-  updateTransform()
-}
-
-function onPanEnd() { isPanning.value = false }
 
 watch(() => focusStore.currentBlockIndex, () => {
   needStaticRedraw = false
@@ -208,8 +178,6 @@ onMounted(async () => {
   // Wait for browser layout (flex container may not have dimensions in nextTick alone)
   await new Promise(resolve => requestAnimationFrame(resolve))
   setup()
-  document.addEventListener('mousemove', onPanMove)
-  document.addEventListener('mouseup', onPanEnd)
 })
 
 onUnmounted(() => {
@@ -217,13 +185,11 @@ onUnmounted(() => {
   staticLayer = null
   overlayLayer = null
   needStaticRedraw = true
-  document.removeEventListener('mousemove', onPanMove)
-  document.removeEventListener('mouseup', onPanEnd)
 })
 </script>
 
 <template>
-  <div ref="containerRef" class="focus-grid" @wheel="onWheel" @click="onClick" @mousedown="onPanStart">
+  <div ref="containerRef" class="focus-grid" @wheel="handleWheel" @click="onClick" @mousedown="onPanStart">
     <canvas ref="canvasRef" style="transform-origin: 0 0; cursor: pointer" />
   </div>
 </template>
