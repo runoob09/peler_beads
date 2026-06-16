@@ -398,6 +398,14 @@ export function renderExportCanvas(
     ctx.fillText(`${item.count}`, lx + swatchW + 4, ly + swatchH / 2)
   }
 
+  // --- Total bead count ---
+  const totalBeads = [...counts.values()].reduce((sum, c) => sum + c, 0)
+  const totalY = legendStartY + legendRows * (legendItemH + 2) + 4
+  ctx.font = `bold ${cellSize * 0.8}px sans-serif`
+  ctx.fillStyle = '#333333'
+  ctx.textAlign = 'left'
+  ctx.fillText(`总计：${totalBeads} 颗`, originX, totalY)
+
   return canvas
 }
 

@@ -81,6 +81,23 @@ export async function generatePdf(
     }
   }
 
+  // Total bead count
+  const colorCounts = new Map<number, number>()
+  for (const row of grid.cells) {
+    for (const cell of row) {
+      if (cell.colorIndex !== null) {
+        colorCounts.set(cell.colorIndex, (colorCounts.get(cell.colorIndex) ?? 0) + 1)
+      }
+    }
+  }
+  let totalBeads = 0
+  for (const c of colorCounts.values()) totalBeads += c
+
+  y -= 4
+  page.drawText(`总计：${totalBeads} 颗`, {
+    x: margin, y, size: legendFontSize, font: boldFont,
+  })
+
   const pdfBytes = new Uint8Array(await doc.save())
 
   if (projectJson) {

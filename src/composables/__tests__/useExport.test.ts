@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { buildSymbolMap, drawGridLines, renderAllCells, renderCell } from '../useExport'
+import { buildSymbolMap, drawGridLines, renderAllCells, renderCell, renderExportCanvas } from '../useExport'
 import type { BeadGrid, PaletteColor } from '../../types'
 import type { GridLineSettings } from '../useExport'
 
@@ -183,5 +183,37 @@ describe('downloadBlob', () => {
   it('exports downloadBlob function', async () => {
     const { downloadBlob } = await import('../useExport')
     expect(typeof downloadBlob).toBe('function')
+  })
+})
+
+describe('renderExportCanvas total count', () => {
+  it('includes total bead count in the legend area', () => {
+    const grid = makeTestGrid() // 2x2 grid, 3 colored cells + 1 null
+    const gridLines = makeGridLines()
+
+    // Collect fillText calls by mocking getContext on canvas prototype
+    const texts: string[] = []
+    const origGetContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function () {
+      const mockCtx = createMockCtx()
+      mockCtx.scale = () => {}
+      const origFillText = mockCtx.fillText
+      mockCtx.fillText = (text: string, x: number, y: number) => {
+        texts.push(text)
+        return origFillText.call(mockCtx, text, x, y)
+      }
+      mockCtx.strokeRect = () => {}
+      return mockCtx as unknown as CanvasRenderingContext2D
+    }
+
+    try {
+      renderExportCanvas(grid, 20, gridLines, 1)
+    } finally {
+      HTMLCanvasElement.prototype.getContext = origGetContext
+    }
+
+    const totalLine = texts.find(t => t.includes('总计'))
+    expect(totalLine).toBeDefined()
+    expect(totalLine).toContain('3') // 3 colored cells
   })
 })
