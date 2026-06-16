@@ -135,8 +135,10 @@ function doRender() {
 
   canvasRef.value.width = w
   canvasRef.value.height = h
-  canvasRef.value.style.width = w + 'px'
-  canvasRef.value.style.height = h + 'px'
+  if (sizeChanged) {
+    canvasRef.value.style.width = w + 'px'
+    canvasRef.value.style.height = h + 'px'
+  }
   const ctx = canvasRef.value.getContext('2d')
   if (!ctx) return
   ctx.drawImage(offscreenCanvas!, 0, 0)
@@ -291,6 +293,8 @@ onMounted(() => {
   document.addEventListener('keydown', onKeyDown)
 })
 onUnmounted(() => {
+  cancelAnimationFrame(renderRafId)
+  renderRafId = 0
   document.removeEventListener('mousemove', onPanMove)
   document.removeEventListener('mouseup', onDocumentMouseUp)
   document.removeEventListener('keydown', onKeyDown)
