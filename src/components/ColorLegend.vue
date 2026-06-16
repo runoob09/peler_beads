@@ -236,8 +236,19 @@ onUnmounted(() => {
 
 watch(
   [sortedColors, panelWidth, () => brushStore.activeColorIndex, () => brushStore.brushMode],
-  () => { nextTick(render) },
+  () => {
+    if (brushStore.isStroking) return
+    nextTick(render)
+  },
   { deep: true },
+)
+
+// Re-render when stroke ends to catch up with accumulated changes
+watch(
+  () => brushStore.isStroking,
+  (stroking) => {
+    if (!stroking) nextTick(render)
+  },
 )
 </script>
 
