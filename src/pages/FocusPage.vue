@@ -1,6 +1,6 @@
 <!-- src/pages/FocusPage.vue -->
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFocusStore } from '../stores/focusStore'
 import { useKeyboardShortcuts } from '../composables/useKeyboardShortcuts'

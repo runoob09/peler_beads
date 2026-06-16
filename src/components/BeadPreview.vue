@@ -18,7 +18,7 @@ const containerRef = ref<HTMLDivElement>()
 const hoveredCell = ref<{ row: number; col: number } | null>(null)
 const { cellSize, recompute } = useCellSize(containerRef, beadStore.beadGrid)
 
-const { zoom, panX, panY, isPanning, panStart, panStartPos, transformStyle, onWheel, onPanStart, onPanMove, onPanEnd } = useZoomPan()
+const { zoom, panX, panY, isPanning, transformStyle, onWheel, onPanStart, onPanEnd } = useZoomPan()
 
 // Brush painting state
 const isPainting = ref(false)

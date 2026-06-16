@@ -20,7 +20,7 @@ function updateCanvasTransform(_px: number, _py: number, _z: number) {
   }
 }
 
-const { zoom, panX, panY, isPanning, onWheel, onPanStart } = useZoomPan({
+const { zoom, onWheel, onPanStart } = useZoomPan({
   onTransformChanged: updateCanvasTransform,
 })
 
