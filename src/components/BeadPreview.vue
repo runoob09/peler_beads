@@ -324,11 +324,6 @@ watch(
       </div>
     </template>
     <template v-if="beadStore.beadGrid">
-      <div class="focus-entry-bar" v-if="!brushStore.brushMode">
-        <router-link to="/focus" class="focus-btn">
-          🎯 进入专心拼豆模式
-        </router-link>
-      </div>
       <div class="preview-body" :class="{ 'has-palette': brushStore.brushMode }">
         <!-- Left: brush color card -->
         <div v-if="brushStore.brushMode" class="brush-palette">
@@ -386,27 +381,6 @@ watch(
 .zoom-indicator { margin-top: 8px; font-size: 12px; color: var(--accent, #aa3bff); font-family: var(--mono, monospace); }
 .grid-info { margin-top: 4px; font-size: 12px; color: var(--text); font-family: var(--mono, monospace); }
 .empty-state { color: var(--text); font-size: 16px; }
-
-.focus-entry-bar {
-  display: flex;
-  justify-content: center;
-  padding: 8px 0 4px;
-}
-.focus-btn {
-  display: inline-block;
-  background: var(--accent, #aa3bff);
-  color: #fff;
-  padding: 6px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-  cursor: pointer;
-  transition: filter 0.2s;
-}
-.focus-btn:hover {
-  filter: brightness(1.1);
-}
 
 .progress-overlay {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;

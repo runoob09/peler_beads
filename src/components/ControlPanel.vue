@@ -137,6 +137,12 @@ const emit = defineEmits<{
 
     <div class="divider" />
 
+    <div v-if="beadStore.beadGrid" class="section">
+      <RouterLink to="/focus" class="focus-entry-btn">
+        🎯 进入专心拼豆模式
+      </RouterLink>
+    </div>
+
     <ExportButtons
       :hasGrid="hasGrid"
       :defaultDisplay="settings.display"
@@ -240,5 +246,20 @@ const emit = defineEmits<{
 .brush-hint {
   font-size: 11px; color: var(--text);
   opacity: 0.7;
+}
+.focus-entry-btn {
+  display: block; text-align: center;
+  background: var(--accent, #aa3bff);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+.focus-entry-btn:hover {
+  filter: brightness(1.1);
 }
 </style>
