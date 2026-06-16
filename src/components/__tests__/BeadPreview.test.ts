@@ -34,7 +34,7 @@ function setup() {
 
 function mountWithGrid() {
   const { pinia } = setup()
-  return mount(BeadPreview, { global: { plugins: [pinia] } })
+  return mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
 }
 
 describe('BeadPreview', () => {
@@ -46,7 +46,7 @@ describe('BeadPreview', () => {
   it('shows empty state when no grid', () => {
     const pinia = createPinia()
     setActivePinia(pinia)
-    const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+    const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
     expect(wrapper.text()).toContain('上传图片开始')
   })
 
@@ -82,7 +82,7 @@ describe('BeadPreview', () => {
     setActivePinia(pinia)
     useBeadStore().beadGrid = makeTestGrid()
     useBeadStore().progress = 50
-    const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+    const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
     expect(wrapper.find('.progress-overlay').exists()).toBe(true)
     expect(wrapper.text()).toContain('50%')
   })
@@ -181,7 +181,7 @@ describe('BeadPreview', () => {
     it('shows crosshair cursor in brush mode', async () => {
       const { pinia, brushStore } = setup()
       brushStore.brushMode = true
-      const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+      const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
       await nextTick()
       const canvas = wrapper.find('canvas')
       expect(canvas.attributes('style')).toContain('crosshair')
@@ -198,7 +198,7 @@ describe('BeadPreview', () => {
       const { pinia, brushStore, beadStore } = setup()
       brushStore.brushMode = true
       brushStore.activeColorIndex = 1 // Black
-      const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+      const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
       await nextTick()
 
       const canvas = wrapper.find('canvas')
@@ -219,7 +219,7 @@ describe('BeadPreview', () => {
       const { pinia, brushStore } = setup()
       brushStore.brushMode = true
       brushStore.activeColorIndex = 1
-      const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+      const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
       await nextTick()
 
       const canvas = wrapper.find('canvas')
@@ -252,7 +252,7 @@ describe('BeadPreview', () => {
       const { pinia, brushStore, beadStore } = setup()
       brushStore.brushMode = true
       brushStore.activeColorIndex = 1 // Black
-      const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+      const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
       await nextTick()
 
       const canvas = wrapper.find('canvas')
@@ -275,7 +275,7 @@ describe('BeadPreview', () => {
       const { pinia, brushStore, beadStore } = setup()
       brushStore.brushMode = true
       brushStore.activeColorIndex = 1 // Black
-      const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+      const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
       await nextTick()
 
       const canvas = wrapper.find('canvas')
@@ -301,7 +301,7 @@ describe('BeadPreview', () => {
       const { pinia, brushStore, beadStore } = setup()
       brushStore.brushMode = true
       brushStore.activeColorIndex = 1 // Black
-      const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
+      const wrapper = mount(BeadPreview, { global: { plugins: [pinia], stubs: { RouterLink: true } } })
       await nextTick()
 
       const canvas = wrapper.find('canvas')
