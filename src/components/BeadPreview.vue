@@ -235,6 +235,7 @@ function onMouseMove(event: MouseEvent) {
     const cell = getCellFromEvent(event)
     if (cell) {
       brushStore.updatePreview(cell.row, cell.col)
+      scheduleRender()
     }
     return
   }
