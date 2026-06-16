@@ -2,6 +2,8 @@ import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useBeadStore } from './beadStore'
 
+export const ERASER_INDEX = -1
+
 interface CellChange {
   row: number
   col: number
@@ -39,8 +41,9 @@ export const useBrushStore = defineStore('brush', () => {
     if (!grid || activeColorIndex.value === null) return false
     if (row < 0 || row >= grid.rows || col < 0 || col >= grid.cols) return false
     const cell = grid.cells[row][col]
-    if (cell.colorIndex === activeColorIndex.value) return false
-    grid.cells[row][col].colorIndex = activeColorIndex.value
+    const targetIndex = activeColorIndex.value === ERASER_INDEX ? null : activeColorIndex.value
+    if (cell.colorIndex === targetIndex) return false
+    grid.cells[row][col].colorIndex = targetIndex
     return true
   }
 
@@ -61,11 +64,12 @@ export const useBrushStore = defineStore('brush', () => {
 
     const cell = grid.cells[row][col]
     const oldColorIndex = cell.colorIndex
-    if (oldColorIndex === activeColorIndex.value) return false
+    const targetIndex = activeColorIndex.value === ERASER_INDEX ? null : activeColorIndex.value
+    if (oldColorIndex === targetIndex) return false
 
     strokeCellKeys.add(key)
     strokeCells.push({ row, col, oldColorIndex })
-    cell.colorIndex = activeColorIndex.value
+    cell.colorIndex = targetIndex
     return true
   }
 

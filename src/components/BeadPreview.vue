@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useBeadStore } from '../stores/beadStore'
-import { useBrushStore } from '../stores/brushStore'
+import { useBrushStore, ERASER_INDEX } from '../stores/brushStore'
 import { usePaletteStore } from '../stores/paletteStore'
 import { renderAllCells, drawGridLines } from '../composables/useExport'
 
@@ -329,6 +329,15 @@ watch(
         <div v-if="brushStore.brushMode" class="brush-palette">
           <div class="palette-title">色卡</div>
           <div class="brush-palette-scroll">
+            <!-- Eraser -->
+            <div
+              class="brush-palette-swatch eraser-swatch"
+              :class="{ active: brushStore.activeColorIndex === ERASER_INDEX }"
+              @click="brushStore.setActiveColor(ERASER_INDEX)"
+              title="橡皮擦"
+            >
+              <span class="swatch-code">🧹</span>
+            </div>
             <div
               v-for="c in paletteColors"
               :key="c.index"
@@ -446,5 +455,21 @@ watch(
   text-align: center;
   line-height: 1;
   pointer-events: none;
+}
+.eraser-swatch {
+  background: #fff;
+  border: 2px dashed var(--border, #d4d4d8);
+}
+.eraser-swatch:hover {
+  border-color: var(--accent, #aa3bff);
+  filter: none;
+  transform: scale(1.12);
+}
+.eraser-swatch.active {
+  border-style: solid;
+  border-color: var(--accent, #aa3bff);
+  box-shadow:
+    0 0 0 2px rgba(170, 59, 255, 0.4),
+    0 2px 8px rgba(170, 59, 255, 0.25);
 }
 </style>
