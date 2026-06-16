@@ -2,7 +2,7 @@
 import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useBeadStore } from '../../stores/beadStore'
 import { useFocusStore } from '../../stores/focusStore'
-import { renderAllCells, drawGridLines } from '../../composables/useExport'
+import { renderAllCells, drawGridLines, cellGap } from '../../composables/useExport'
 import { getCellFromEvent } from '../../composables/useGridInteraction'
 import { useZoomPan } from '../../composables/useZoomPan'
 import { useCellSize } from '../../composables/useCellSize'
@@ -55,7 +55,9 @@ function drawStatic() {
   if (!staticLayer || !beadStore.beadGrid) return
   const ctx = staticLayer.getContext('2d')
   if (!ctx) return
-  ctx.clearRect(0, 0, staticLayer.width, staticLayer.height)
+  // Fill background for gap visibility
+  ctx.fillStyle = '#f5f0ff'
+  ctx.fillRect(0, 0, staticLayer.width, staticLayer.height)
   renderAllCells(ctx, beadStore.beadGrid, cellSize.value, 'color', false)
   const d = beadStore.settings.display
   drawGridLines(ctx, beadStore.beadGrid.cols, beadStore.beadGrid.rows, cellSize.value, {
@@ -74,16 +76,20 @@ function drawOverlay() {
   const block = focusStore.currentBlock
   if (!block) return
 
+  const gap = cellGap(cellSize.value)
   const marked = block.markedCells
+  const cellSet = new Set(block.cells.map(c => `${c.row},${c.col}`))
+
+  // Draw marked cells (green fill + checkmark)
   for (const { row, col } of block.cells) {
     const x = col * cellSize.value
     const y = row * cellSize.value
     if (marked.has(`${row},${col}`)) {
       ctx.fillStyle = 'rgba(76, 175, 80, 0.35)'
-      ctx.fillRect(x, y, cellSize.value, cellSize.value)
+      ctx.fillRect(x + gap, y + gap, cellSize.value - gap * 2, cellSize.value - gap * 2)
       const cx = x + cellSize.value / 2
       const cy = y + cellSize.value / 2
-      const sz = cellSize.value * 0.35
+      const sz = (cellSize.value - gap * 2) * 0.35
       ctx.strokeStyle = '#2e7d32'
       ctx.lineWidth = Math.max(1.5, cellSize.value * 0.08)
       ctx.beginPath()
@@ -91,13 +97,39 @@ function drawOverlay() {
       ctx.lineTo(cx - sz * 0.1, cy + sz * 0.35)
       ctx.lineTo(cx + sz * 0.5, cy - sz * 0.3)
       ctx.stroke()
-    } else {
-      const pulse = 0.3 + 0.2 * Math.sin(Date.now() / 800)
-      ctx.strokeStyle = `rgba(170, 59, 255, ${pulse})`
-      ctx.lineWidth = Math.max(2, cellSize.value * 0.12)
-      ctx.strokeRect(x + 1, y + 1, cellSize.value - 2, cellSize.value - 2)
     }
   }
+
+  // Draw single outline around the block's outer perimeter (only exposed edges)
+  const pulse = 0.3 + 0.2 * Math.sin(Date.now() / 800)
+  ctx.strokeStyle = `rgba(170, 59, 255, ${pulse})`
+  ctx.lineWidth = Math.max(2, cellSize.value * 0.12)
+  ctx.beginPath()
+  for (const { row, col } of block.cells) {
+    const x = col * cellSize.value
+    const y = row * cellSize.value
+    // Top edge — exposed if cell above is not in block
+    if (!cellSet.has(`${row - 1},${col}`)) {
+      ctx.moveTo(x + gap, y + gap)
+      ctx.lineTo(x + cellSize.value - gap, y + gap)
+    }
+    // Bottom edge
+    if (!cellSet.has(`${row + 1},${col}`)) {
+      ctx.moveTo(x + gap, y + cellSize.value - gap)
+      ctx.lineTo(x + cellSize.value - gap, y + cellSize.value - gap)
+    }
+    // Left edge
+    if (!cellSet.has(`${row},${col - 1}`)) {
+      ctx.moveTo(x + gap, y + gap)
+      ctx.lineTo(x + gap, y + cellSize.value - gap)
+    }
+    // Right edge
+    if (!cellSet.has(`${row},${col + 1}`)) {
+      ctx.moveTo(x + cellSize.value - gap, y + gap)
+      ctx.lineTo(x + cellSize.value - gap, y + cellSize.value - gap)
+    }
+  }
+  ctx.stroke()
 }
 
 function composite(timestamp: number) {

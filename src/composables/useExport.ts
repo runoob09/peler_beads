@@ -85,6 +85,13 @@ export function renderAllCells(
   }
 }
 
+// Gap between cells for the "separated beads" look (proportional to cell size)
+const CELL_GAP_RATIO = 0.08
+
+export function cellGap(cellSize: number): number {
+  return Math.max(1, cellSize * CELL_GAP_RATIO)
+}
+
 export function renderCell(
   ctx: CanvasRenderingContext2D,
   grid: BeadGrid,
@@ -98,6 +105,7 @@ export function renderCell(
   const cell = grid.cells[row][col]
   const x = col * cellSize
   const y = row * cellSize
+  const gap = cellGap(cellSize)
 
   if (cell.colorIndex === null) {
     drawNullCellMark(ctx, x, y, cellSize)
@@ -105,13 +113,17 @@ export function renderCell(
   }
 
   const color = grid.palette[cell.colorIndex]
+  const bx = x + gap
+  const by = y + gap
+  const bw = cellSize - gap * 2
+  const bh = cellSize - gap * 2
 
   if (renderMode === 'symbol') {
     ctx.fillStyle = '#FFFFFF'
   } else {
     ctx.fillStyle = color.hex
   }
-  ctx.fillRect(x, y, cellSize, cellSize)
+  ctx.fillRect(bx, by, bw, bh)
 
   // Render color label inside cell
   if (showLabels) {

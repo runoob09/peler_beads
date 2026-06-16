@@ -157,6 +157,7 @@ function setMode(mode: 'image' | 'blank') {
         :activeColorIndex="null"
         @select-brand="paletteStore.selectBrand($event)"
         @remove-color="emit('remove-color', $event)"
+        @select-color="brushStore.setActiveColor($event)"
       />
 
       <div class="divider" />

@@ -3,7 +3,7 @@ import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useBeadStore } from '../stores/beadStore'
 import { useBrushStore, ERASER_INDEX } from '../stores/brushStore'
 import { usePaletteStore } from '../stores/paletteStore'
-import { renderAllCells, drawGridLines, drawNullCellMark, getTextColor } from '../composables/useExport'
+import { renderAllCells, drawGridLines, drawNullCellMark, getTextColor, cellGap } from '../composables/useExport'
 import { getCellFromEvent } from '../composables/useGridInteraction'
 import { useZoomPan } from '../composables/useZoomPan'
 import { useCellSize } from '../composables/useCellSize'
@@ -99,22 +99,27 @@ function doRender() {
     offscreenCanvas.width = w
     offscreenCanvas.height = h
     offscreenCtx = offscreenCanvas.getContext('2d')!
-    offscreenCtx.clearRect(0, 0, w, h)
+    // Fill background for gap visibility
+    offscreenCtx.fillStyle = '#f5f0ff'
+    offscreenCtx.fillRect(0, 0, w, h)
     const mode = beadStore.settings.display.renderMode
     renderAllCells(offscreenCtx, grid, cellSize.value, mode, false)
     needFullRender = false
     dirtyCells.clear()
   } else if (offscreenCtx && dirtyCells.size > 0) {
+    const gap = cellGap(cellSize.value)
     for (const key of dirtyCells) {
       const [r, c] = key.split(',').map(Number)
       if (r < 0 || r >= grid.rows || c < 0 || c >= grid.cols) continue
       const x = c * cellSize.value
       const y = r * cellSize.value
-      offscreenCtx.clearRect(x, y, cellSize.value, cellSize.value)
+      // Clear cell area and fill background
+      offscreenCtx.fillStyle = '#f5f0ff'
+      offscreenCtx.fillRect(x, y, cellSize.value, cellSize.value)
       const colorIndex = grid.cells[r][c].colorIndex
       if (colorIndex !== null) {
         offscreenCtx.fillStyle = grid.palette[colorIndex].hex
-        offscreenCtx.fillRect(x, y, cellSize.value, cellSize.value)
+        offscreenCtx.fillRect(x + gap, y + gap, cellSize.value - gap * 2, cellSize.value - gap * 2)
       } else {
         drawNullCellMark(offscreenCtx, x, y, cellSize.value)
       }

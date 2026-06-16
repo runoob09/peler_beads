@@ -60,6 +60,7 @@ watch(() => paletteStore.selectedBrand, () => { triggerProcess() })
 function onCreateBlank() {
   const s = beadStore.settings
   beadStore.initEmptyGrid(s.gridRows, s.gridCols, paletteStore.palette)
+  imageFile.value = null
   brushStore.brushMode = true
 }
 
