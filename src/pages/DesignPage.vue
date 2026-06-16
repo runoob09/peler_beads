@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import ControlPanel from '../components/ControlPanel.vue'
+import ImageEditorModal from '../components/ImageEditorModal.vue'
 import BeadPreview from '../components/BeadPreview.vue'
 import ColorLegend from '../components/ColorLegend.vue'
 import { usePaletteStore } from '../stores/paletteStore'
@@ -16,9 +17,21 @@ const beadStore = useBeadStore()
 const brushStore = useBrushStore()
 
 const imageFile = ref<File | null>(null)
+const showEditor = ref(false)
 
 function onUpload(file: File) {
   imageFile.value = file
+  showEditor.value = true
+}
+
+function onEditorConfirm(file: File) {
+  imageFile.value = file
+  showEditor.value = false
+  triggerProcess()
+}
+
+function onEditorCancel() {
+  showEditor.value = false
   triggerProcess()
 }
 
@@ -144,6 +157,12 @@ async function onImportFromDrawing() {
       <BeadPreview />
     </div>
     <ColorLegend />
+    <ImageEditorModal
+      :show="showEditor"
+      :imageFile="imageFile"
+      @confirm="onEditorConfirm"
+      @cancel="onEditorCancel"
+    />
   </div>
 </template>
 
