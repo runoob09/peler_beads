@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useBeadStore } from '../../stores/beadStore'
 import { useFocusStore } from '../../stores/focusStore'
 import { renderAllCells, drawGridLines } from '../../composables/useExport'
@@ -217,7 +217,10 @@ watch(() => focusStore.currentBlockIndex, () => {
   startAnimIfNeeded()
 })
 
-onMounted(() => {
+onMounted(async () => {
+  await nextTick()
+  // Wait for browser layout (flex container may not have dimensions in nextTick alone)
+  await new Promise(resolve => requestAnimationFrame(resolve))
   setup()
   document.addEventListener('mousemove', onPanMove)
   document.addEventListener('mouseup', onPanEnd)
