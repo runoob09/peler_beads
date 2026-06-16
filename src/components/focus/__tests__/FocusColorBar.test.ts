@@ -30,9 +30,9 @@ describe('FocusColorBar', () => {
   bead.beadGrid = makeGrid()
   useFocusStore().initFromGrid()
 
-  it('displays current color hex', () => {
+  it('displays current color code', () => {
     const wrapper = mount(FocusColorBar, { global: { plugins: [pinia] } })
-    expect(wrapper.text()).toContain('#')
+    expect(wrapper.text()).toContain('Red')
   })
 
   it('displays block progress like "1 / N"', () => {

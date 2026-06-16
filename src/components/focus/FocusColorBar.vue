@@ -22,7 +22,7 @@ const blockProgress = computed(() => {
         :style="{ background: focusStore.currentBlock?.colorHex }"
       ></div>
       <div class="color-info">
-        <div class="color-hex">{{ focusStore.currentBlock?.colorHex ?? '' }}</div>
+        <div class="color-code">{{ focusStore.currentBlock?.colorName?.split(/[\s_]+/)[0] ?? '' }}</div>
         <div class="block-progress">块 {{ blockProgress }}</div>
       </div>
     </div>
@@ -48,7 +48,7 @@ const blockProgress = computed(() => {
   border: 2px solid var(--text-h, #1a1a2e);
 }
 .color-info { text-align: center; }
-.color-hex {
+.color-code {
   font-size: 14px; font-weight: 700;
   color: var(--text-h, #1a1a2e);
   font-family: var(--mono, monospace);

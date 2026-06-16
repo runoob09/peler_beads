@@ -25,7 +25,7 @@ const focusStore = useFocusStore()
           class="color-dot"
           :style="{ background: focusStore.currentBlock?.colorHex }"
         ></span>
-        {{ focusStore.currentBlock?.colorName ?? '' }}
+        {{ focusStore.currentBlock?.colorName?.split(/[\s_]+/)[0] ?? '' }}
       </span>
       <div class="progress-bar">
         <div

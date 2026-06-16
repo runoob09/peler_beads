@@ -20,7 +20,7 @@ const focusStore = useFocusStore()
           {{ block.status === 'completed' ? '✅' : block.status === 'active' ? '⏳' : '⬜' }}
         </span>
         <span class="color-swatch" :style="{ background: block.colorHex }"></span>
-        <span class="color-label">{{ block.colorName }}</span>
+        <span class="color-label">{{ block.colorName?.split(/[\s_]+/)[0] ?? '' }}</span>
       </div>
     </div>
   </div>
