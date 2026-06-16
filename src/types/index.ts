@@ -63,3 +63,15 @@ export interface PixelImage {
   width: number
   height: number
 }
+
+export interface FocusBlock {
+  id: string
+  colorIndex: number
+  colorName: string
+  colorHex: string
+  cells: { row: number; col: number }[]
+  status: 'pending' | 'active' | 'completed'
+  markedCells: Set<string>
+  startedAt: number | null
+  completedAt: number | null
+}
