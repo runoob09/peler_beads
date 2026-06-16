@@ -20,6 +20,117 @@ export function buildSymbolMap(palette: PaletteColor[]): Map<number, string> {
   return map
 }
 
+export function drawGridLines(
+  ctx: CanvasRenderingContext2D,
+  cols: number,
+  rows: number,
+  cellSize: number,
+  gridLines: GridLineSettings,
+  offsetX = 0,
+  offsetY = 0,
+): void {
+  if (!gridLines.showGrid) return
+
+  const totalW = cols * cellSize
+  const totalH = rows * cellSize
+
+  if (gridLines.gridLineWidth > 0) {
+    ctx.strokeStyle = gridLines.gridLineColor
+    ctx.lineWidth = gridLines.gridLineWidth
+    for (let row = 0; row <= rows; row++) {
+      ctx.beginPath()
+      ctx.moveTo(offsetX, offsetY + row * cellSize)
+      ctx.lineTo(offsetX + totalW, offsetY + row * cellSize)
+      ctx.stroke()
+    }
+    for (let col = 0; col <= cols; col++) {
+      ctx.beginPath()
+      ctx.moveTo(offsetX + col * cellSize, offsetY)
+      ctx.lineTo(offsetX + col * cellSize, offsetY + totalH)
+      ctx.stroke()
+    }
+  }
+
+  if (gridLines.boldGridInterval > 0) {
+    ctx.strokeStyle = gridLines.boldGridColor
+    ctx.lineWidth = gridLines.boldGridWidth
+    for (let row = 0; row <= rows; row += gridLines.boldGridInterval) {
+      ctx.beginPath()
+      ctx.moveTo(offsetX, offsetY + row * cellSize)
+      ctx.lineTo(offsetX + totalW, offsetY + row * cellSize)
+      ctx.stroke()
+    }
+    for (let col = 0; col <= cols; col += gridLines.boldGridInterval) {
+      ctx.beginPath()
+      ctx.moveTo(offsetX + col * cellSize, offsetY)
+      ctx.lineTo(offsetX + col * cellSize, offsetY + totalH)
+      ctx.stroke()
+    }
+  }
+}
+
+export function renderAllCells(
+  ctx: CanvasRenderingContext2D,
+  grid: BeadGrid,
+  cellSize: number,
+  renderMode: RenderMode,
+  showLabels = false,
+): void {
+  const symbolMap = renderMode !== 'color' ? buildSymbolMap(grid.palette) : null
+
+  for (let row = 0; row < grid.rows; row++) {
+    for (let col = 0; col < grid.cols; col++) {
+      renderCell(ctx, grid, row, col, cellSize, renderMode, symbolMap, showLabels)
+    }
+  }
+}
+
+export function renderCell(
+  ctx: CanvasRenderingContext2D,
+  grid: BeadGrid,
+  row: number,
+  col: number,
+  cellSize: number,
+  renderMode: RenderMode,
+  symbolMap: Map<number, string> | null,
+  showLabels: boolean,
+): void {
+  const cell = grid.cells[row][col]
+  if (cell.colorIndex === null) return
+
+  const color = grid.palette[cell.colorIndex]
+  const x = col * cellSize
+  const y = row * cellSize
+
+  if (renderMode === 'symbol') {
+    ctx.fillStyle = '#FFFFFF'
+  } else {
+    ctx.fillStyle = color.hex
+  }
+  ctx.fillRect(x, y, cellSize, cellSize)
+
+  // Render color label inside cell
+  if (showLabels) {
+    const label = getColorLabel(color)
+    const fontSize = Math.max(6, cellSize * 0.35)
+    ctx.font = `bold ${fontSize}px monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = getTextColor(color.hex)
+    ctx.fillText(label, x + cellSize / 2, y + cellSize / 2)
+  }
+
+  if (renderMode === 'symbol' || renderMode === 'mixed') {
+    const sym = symbolMap!.get(cell.colorIndex!) ?? '?'
+    const fontSize = cellSize * 0.6
+    ctx.font = `${fontSize}px monospace`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = renderMode === 'symbol' ? '#000000' : getTextColor(color.hex)
+    ctx.fillText(sym, x + cellSize / 2, y + cellSize / 2)
+  }
+}
+
 function getTextColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
@@ -45,82 +156,8 @@ export function renderGridToCanvas(
   if (!ctx) return canvas
   ctx.scale(scale, scale)
 
-  const symbolMap = renderMode !== 'color' ? buildSymbolMap(grid.palette) : null
-
-  for (let row = 0; row < grid.rows; row++) {
-    for (let col = 0; col < grid.cols; col++) {
-      const cell = grid.cells[row][col]
-      if (cell.colorIndex === null) continue
-      const color = grid.palette[cell.colorIndex]
-      const x = col * cellSize
-      const y = row * cellSize
-
-      if (renderMode === 'symbol') {
-        ctx.fillStyle = '#FFFFFF'
-      } else {
-        ctx.fillStyle = color.hex
-      }
-      ctx.fillRect(x, y, cellSize, cellSize)
-
-      // Render color label inside cell
-      if (showLabels) {
-        const label = getColorLabel(color)
-        const fontSize = Math.max(6, cellSize * 0.35)
-        ctx.font = `bold ${fontSize}px monospace`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillStyle = getTextColor(color.hex)
-        ctx.fillText(label, x + cellSize / 2, y + cellSize / 2)
-      }
-
-      if (renderMode === 'symbol' || renderMode === 'mixed') {
-        const symbol = symbolMap!.get(cell.colorIndex!) ?? '?'
-        const fontSize = cellSize * 0.6
-        ctx.font = `${fontSize}px monospace`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillStyle = renderMode === 'symbol' ? '#000000' : getTextColor(color.hex)
-        ctx.fillText(symbol, x + cellSize / 2, y + cellSize / 2)
-      }
-    }
-  }
-
-  // Grid lines
-  if (gridLines.showGrid) {
-    if (gridLines.gridLineWidth > 0) {
-      ctx.strokeStyle = gridLines.gridLineColor
-      ctx.lineWidth = gridLines.gridLineWidth
-      for (let row = 0; row <= grid.rows; row++) {
-        ctx.beginPath()
-        ctx.moveTo(0, row * cellSize)
-        ctx.lineTo(grid.cols * cellSize, row * cellSize)
-        ctx.stroke()
-      }
-      for (let col = 0; col <= grid.cols; col++) {
-        ctx.beginPath()
-        ctx.moveTo(col * cellSize, 0)
-        ctx.lineTo(col * cellSize, grid.rows * cellSize)
-        ctx.stroke()
-      }
-    }
-
-    if (gridLines.boldGridInterval > 0) {
-      ctx.strokeStyle = gridLines.boldGridColor
-      ctx.lineWidth = gridLines.boldGridWidth
-      for (let row = 0; row <= grid.rows; row += gridLines.boldGridInterval) {
-        ctx.beginPath()
-        ctx.moveTo(0, row * cellSize)
-        ctx.lineTo(grid.cols * cellSize, row * cellSize)
-        ctx.stroke()
-      }
-      for (let col = 0; col <= grid.cols; col += gridLines.boldGridInterval) {
-        ctx.beginPath()
-        ctx.moveTo(col * cellSize, 0)
-        ctx.lineTo(col * cellSize, grid.rows * cellSize)
-        ctx.stroke()
-      }
-    }
-  }
+  renderAllCells(ctx, grid, cellSize, renderMode, showLabels)
+  drawGridLines(ctx, grid.cols, grid.rows, cellSize, gridLines)
 
   return canvas
 }
