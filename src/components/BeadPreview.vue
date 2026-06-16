@@ -145,6 +145,18 @@ function doRender() {
       if (colorIndex !== null) {
         offscreenCtx.fillStyle = grid.palette[colorIndex].hex
         offscreenCtx.fillRect(x, y, cellSize.value, cellSize.value)
+      } else {
+        const pad = Math.max(2, cellSize.value * 0.15)
+        offscreenCtx.strokeStyle = '#d4d4d8'
+        offscreenCtx.lineWidth = 1
+        offscreenCtx.beginPath()
+        offscreenCtx.moveTo(x + pad, y + pad)
+        offscreenCtx.lineTo(x + cellSize.value - pad, y + cellSize.value - pad)
+        offscreenCtx.stroke()
+        offscreenCtx.beginPath()
+        offscreenCtx.moveTo(x + cellSize.value - pad, y + pad)
+        offscreenCtx.lineTo(x + pad, y + cellSize.value - pad)
+        offscreenCtx.stroke()
       }
     }
     dirtyCells.clear()
