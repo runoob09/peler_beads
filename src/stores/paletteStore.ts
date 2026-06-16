@@ -1,7 +1,8 @@
-import { ref, computed } from 'vue'
+// src/stores/paletteStore.ts
+import { ref, computed, watch } from 'vue'
 import { defineStore } from 'pinia'
 import type { PaletteColor } from '../types'
-import { getBrandColors, BRAND_NAMES } from '../data/palettes'
+import { getBrandNames, getBrandColors, type ColorItem } from '../data/palettes'
 import { hexToRgb, rgbToLab } from '../utils/colorSpace'
 
 export interface PaletteColorInternal extends PaletteColor {
@@ -18,14 +19,28 @@ function generateId(): string {
 }
 
 export const usePaletteStore = defineStore('palette', () => {
-  const selectedBrand = ref<string>(BRAND_NAMES[0] ?? '')
+  const selectedBrand = ref<string>('')
   const customColors = ref<PaletteColorInternal[]>([])
 
-  const brandNames = computed(() => BRAND_NAMES)
+  // Async brand names
+  const brandNames = ref<string[]>([])
+  getBrandNames().then(names => {
+    brandNames.value = names
+    if (names.length > 0 && !selectedBrand.value) {
+      selectedBrand.value = names[0]
+    }
+  })
+
+  // Async brand palette
+  const brandPaletteData = ref<ColorItem[]>([])
+
+  watch(selectedBrand, async (brand) => {
+    if (!brand) { brandPaletteData.value = []; return }
+    brandPaletteData.value = await getBrandColors(brand)
+  }, { immediate: true })
 
   const brandPalette = computed<PaletteColorInternal[]>(() => {
-    if (!selectedBrand.value) return []
-    const colors = getBrandColors(selectedBrand.value)
+    const colors = brandPaletteData.value
     const seen = new Set<string>()
     const result: PaletteColorInternal[] = []
     for (const c of colors) {
