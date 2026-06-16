@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onUnmounted, nextTick, computed } from 'vue'
-import { countColorUsage } from '../composables/useExport'
+import { countColorUsage, getTextColor, colorCodeFromName } from '../composables/useExport'
 import { useBeadStore } from '../stores/beadStore'
 import { useBrushStore } from '../stores/brushStore'
 
@@ -36,17 +36,6 @@ const sortedColors = computed<LegendItem[]>(() => {
       pct: Math.round((count / total) * 100),
     }))
 })
-
-function textColor(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.53 ? '#1a1a2e' : '#ffffff'
-}
-
-function labelShort(name: string): string {
-  return name.split(/[\s_]+/)[0] ?? name
-}
 
 // Layout constants
 const SWATCH_W = 60       // fixed swatch width
@@ -137,11 +126,11 @@ function render() {
     ctx.stroke()
 
     // Label on swatch — 20px bold
-    ctx.fillStyle = textColor(item.color.hex)
+    ctx.fillStyle = getTextColor(item.color.hex)
     ctx.font = 'bold 16px monospace'
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(labelShort(item.color.name), cx + SWATCH_W / 2, cy + 3 + swatchH / 2)
+    ctx.fillText(colorCodeFromName(item.color.name), cx + SWATCH_W / 2, cy + 3 + swatchH / 2)
 
     // Count
     ctx.fillStyle = textH

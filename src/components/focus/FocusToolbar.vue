@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFocusStore } from '../../stores/focusStore'
+import { colorCodeFromName } from '../../composables/useExport'
 
 defineProps<{
   timerFormatted: string
@@ -25,7 +26,7 @@ const focusStore = useFocusStore()
           class="color-dot"
           :style="{ background: focusStore.currentBlock?.colorHex }"
         ></span>
-        {{ focusStore.currentBlock?.colorName?.split(/[\s_]+/)[0] ?? '' }}
+        {{ colorCodeFromName(focusStore.currentBlock?.colorName ?? '') }}
       </span>
       <div class="progress-bar">
         <div

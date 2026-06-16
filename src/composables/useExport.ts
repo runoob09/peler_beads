@@ -100,18 +100,7 @@ export function renderCell(
   const y = row * cellSize
 
   if (cell.colorIndex === null) {
-    // Null cell: render diagonal cross to distinguish from white background
-    const pad = Math.max(2, cellSize * 0.15)
-    ctx.strokeStyle = '#d4d4d8'
-    ctx.lineWidth = 1
-    ctx.beginPath()
-    ctx.moveTo(x + pad, y + pad)
-    ctx.lineTo(x + cellSize - pad, y + cellSize - pad)
-    ctx.stroke()
-    ctx.beginPath()
-    ctx.moveTo(x + cellSize - pad, y + pad)
-    ctx.lineTo(x + pad, y + cellSize - pad)
-    ctx.stroke()
+    drawNullCellMark(ctx, x, y, cellSize)
     return
   }
 
@@ -146,12 +135,30 @@ export function renderCell(
   }
 }
 
-function getTextColor(hex: string): string {
+export function getTextColor(hex: string): string {
   const r = parseInt(hex.slice(1, 3), 16)
   const g = parseInt(hex.slice(3, 5), 16)
   const b = parseInt(hex.slice(5, 7), 16)
   const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
   return luminance > 0.5 ? '#000000' : '#FFFFFF'
+}
+
+/** Draw diagonal cross marks for null (erased) cells */
+export function drawNullCellMark(
+  ctx: CanvasRenderingContext2D,
+  x: number, y: number, cellSize: number,
+): void {
+  const pad = Math.max(2, cellSize * 0.15)
+  ctx.strokeStyle = '#d4d4d8'
+  ctx.lineWidth = 1
+  ctx.beginPath()
+  ctx.moveTo(x + pad, y + pad)
+  ctx.lineTo(x + cellSize - pad, y + cellSize - pad)
+  ctx.stroke()
+  ctx.beginPath()
+  ctx.moveTo(x + cellSize - pad, y + pad)
+  ctx.lineTo(x + pad, y + cellSize - pad)
+  ctx.stroke()
 }
 
 export function renderGridToCanvas(
@@ -177,10 +184,14 @@ export function renderGridToCanvas(
   return canvas
 }
 
-function getColorLabel(color: PaletteColor): string {
+export function getColorLabel(color: PaletteColor): string {
   // Extract short code from name (e.g., "A01" from "A01 白色", or just use name)
-  const parts = color.name.split(/[\s_]+/)
-  return parts[0] ?? color.hex
+  return colorCodeFromName(color.name) ?? color.hex
+}
+
+/** Extract short color code from name (e.g. "A01" from "A01 白色") */
+export function colorCodeFromName(name: string): string {
+  return name.split(/[\s_]+/)[0] ?? name
 }
 
 export function countColorUsage(grid: BeadGrid): Map<number, number> {

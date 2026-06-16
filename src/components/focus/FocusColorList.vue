@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useFocusStore } from '../../stores/focusStore'
+import { colorCodeFromName } from '../../composables/useExport'
 const focusStore = useFocusStore()
 </script>
 
@@ -20,7 +21,7 @@ const focusStore = useFocusStore()
           {{ block.status === 'completed' ? '✅' : block.status === 'active' ? '⏳' : '⬜' }}
         </span>
         <span class="color-swatch" :style="{ background: block.colorHex }"></span>
-        <span class="color-label">{{ block.colorName?.split(/[\s_]+/)[0] ?? '' }}</span>
+        <span class="color-label">{{ colorCodeFromName(block.colorName ?? '') }}</span>
       </div>
     </div>
   </div>

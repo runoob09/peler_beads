@@ -3,7 +3,8 @@ import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useBeadStore } from '../stores/beadStore'
 import { useBrushStore, ERASER_INDEX } from '../stores/brushStore'
 import { usePaletteStore } from '../stores/paletteStore'
-import { renderAllCells, drawGridLines } from '../composables/useExport'
+import { renderAllCells, drawGridLines, drawNullCellMark, getTextColor } from '../composables/useExport'
+import { clampZoom, getCellFromEvent, ZOOM_STEP } from '../composables/useGridInteraction'
 
 const beadStore = useBeadStore()
 const brushStore = useBrushStore()
@@ -24,10 +25,6 @@ const panStartPos = ref({ x: 0, y: 0 })
 
 // Brush painting state
 const isPainting = ref(false)
-
-const MIN_ZOOM = 0.25
-const MAX_ZOOM = 4
-const ZOOM_STEP = 0.1
 
 const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
@@ -61,36 +58,14 @@ let needFullRender = true
 let renderRafId = 0
 const dirtyCells = new Set<string>()
 
-function swatchTextColor(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255 > 0.53 ? '#1a1a2e' : '#ffffff'
-}
-
 // Floating palette for brush mode
 const paletteColors = computed(() => {
   return paletteStore.palette.map((c, i) => ({ ...c, index: i }))
 })
 
-function clampZoom(z: number): number {
-  return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z))
-}
-
-function getCellFromEvent(event: MouseEvent): { row: number; col: number } | null {
+function resolveCell(event: MouseEvent) {
   if (!canvasRef.value) return null
-  const rect = canvasRef.value.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  const scaledCell = cellSize.value * zoom.value
-  const col = Math.floor(x / scaledCell)
-  const row = Math.floor(y / scaledCell)
-  const grid = beadStore.beadGrid
-  if (!grid) return null
-  if (row >= 0 && row < grid.rows && col >= 0 && col < grid.cols) {
-    return { row, col }
-  }
-  return null
+  return getCellFromEvent(event, canvasRef.value, beadStore.beadGrid, cellSize.value, zoom.value)
 }
 
 function scheduleRender(forceFull = false) {
@@ -146,17 +121,7 @@ function doRender() {
         offscreenCtx.fillStyle = grid.palette[colorIndex].hex
         offscreenCtx.fillRect(x, y, cellSize.value, cellSize.value)
       } else {
-        const pad = Math.max(2, cellSize.value * 0.15)
-        offscreenCtx.strokeStyle = '#d4d4d8'
-        offscreenCtx.lineWidth = 1
-        offscreenCtx.beginPath()
-        offscreenCtx.moveTo(x + pad, y + pad)
-        offscreenCtx.lineTo(x + cellSize.value - pad, y + cellSize.value - pad)
-        offscreenCtx.stroke()
-        offscreenCtx.beginPath()
-        offscreenCtx.moveTo(x + cellSize.value - pad, y + pad)
-        offscreenCtx.lineTo(x + pad, y + cellSize.value - pad)
-        offscreenCtx.stroke()
+        drawNullCellMark(offscreenCtx, x, y, cellSize.value)
       }
     }
     dirtyCells.clear()
@@ -207,7 +172,7 @@ function onMouseDown(event: MouseEvent) {
   if (brushStore.brushMode) {
     // Shift-rectangle select mode
     if (shiftHeld) {
-      const cell = getCellFromEvent(event)
+      const cell = resolveCell(event)
       if (!cell) return
       if (!brushStore.selectStart) {
         brushStore.beginSelect(cell.row, cell.col)
@@ -227,7 +192,7 @@ function onMouseDown(event: MouseEvent) {
     // Normal brush painting
     isPainting.value = true
     brushStore.beginStroke()
-    const cell = getCellFromEvent(event)
+    const cell = resolveCell(event)
     if (cell) {
       if (brushStore.continueStroke(cell.row, cell.col)) {
         dirtyCells.add(`${cell.row},${cell.col}`)
@@ -244,7 +209,7 @@ function onMouseMove(event: MouseEvent) {
 
   // Shift-rectangle preview
   if (shiftHeld && brushStore.selectStart) {
-    const cell = getCellFromEvent(event)
+    const cell = resolveCell(event)
     if (cell) {
       brushStore.updatePreview(cell.row, cell.col)
       scheduleRender()
@@ -253,7 +218,7 @@ function onMouseMove(event: MouseEvent) {
   }
 
   if (isPainting.value) {
-    const cell = getCellFromEvent(event)
+    const cell = resolveCell(event)
     if (cell) {
       hoveredCell.value = cell
       if (brushStore.continueStroke(cell.row, cell.col)) {
@@ -427,7 +392,7 @@ watch(
               :key="c.index"
               class="brush-palette-swatch"
               :class="{ active: brushStore.activeColorIndex === c.index }"
-              :style="{ background: c.hex, color: swatchTextColor(c.hex) }"
+              :style="{ background: c.hex, color: getTextColor(c.hex) }"
               :title="c.name || c.hex"
               @click="brushStore.setActiveColor(c.index)"
             >

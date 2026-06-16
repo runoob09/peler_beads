@@ -3,6 +3,7 @@ import { ref, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { useBeadStore } from '../../stores/beadStore'
 import { useFocusStore } from '../../stores/focusStore'
 import { renderAllCells, drawGridLines } from '../../composables/useExport'
+import { clampZoom, getCellFromEvent } from '../../composables/useGridInteraction'
 
 const beadStore = useBeadStore()
 const focusStore = useFocusStore()
@@ -25,24 +26,9 @@ let lastOverlayUpdate = 0
 const OVERLAY_INTERVAL = 250
 let needStaticRedraw = true
 
-function clampZoom(z: number): number {
-  return Math.max(0.25, Math.min(4, z))
-}
-
-function getCellFromEvent(event: MouseEvent): { row: number; col: number } | null {
+function resolveCell(event: MouseEvent) {
   if (!canvasRef.value) return null
-  const rect = canvasRef.value.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  const scaledCell = cellSize.value * zoom.value
-  const col = Math.floor(x / scaledCell)
-  const row = Math.floor(y / scaledCell)
-  const grid = beadStore.beadGrid
-  if (!grid) return null
-  if (row >= 0 && row < grid.rows && col >= 0 && col < grid.cols) {
-    return { row, col }
-  }
-  return null
+  return getCellFromEvent(event, canvasRef.value, beadStore.beadGrid, cellSize.value, zoom.value)
 }
 
 function ensureLayers(w: number, h: number) {
@@ -171,7 +157,7 @@ function updateTransform() {
 }
 
 function onClick(event: MouseEvent) {
-  const cell = getCellFromEvent(event)
+  const cell = resolveCell(event)
   if (!cell) return
   focusStore.markCell(cell.row, cell.col)
   lastOverlayUpdate = 0

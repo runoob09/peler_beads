@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useFocusStore } from '../../stores/focusStore'
+import { colorCodeFromName } from '../../composables/useExport'
 
 const focusStore = useFocusStore()
 
@@ -22,7 +23,7 @@ const blockProgress = computed(() => {
         :style="{ background: focusStore.currentBlock?.colorHex }"
       ></div>
       <div class="color-info">
-        <div class="color-code">{{ focusStore.currentBlock?.colorName?.split(/[\s_]+/)[0] ?? '' }}</div>
+        <div class="color-code">{{ colorCodeFromName(focusStore.currentBlock?.colorName ?? '') ?? '' }}</div>
         <div class="block-progress">块 {{ blockProgress }}</div>
       </div>
     </div>
