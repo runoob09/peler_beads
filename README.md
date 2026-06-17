@@ -143,4 +143,4 @@ Commits follow [Conventional Commits](https://www.conventionalcommits.org/). Ens
 
 ## License
 
-MIT
+Licensed under [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) — free to use and modify for non-commercial purposes only. Commercial use requires explicit permission from the author.

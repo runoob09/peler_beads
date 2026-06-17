@@ -143,4 +143,4 @@ npx vue-tsc -b
 
 ## 许可证
 
-MIT
+基于 [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) 许可 — 免费使用和修改，但仅限于非商业用途。商业使用需获得作者明确授权。
