@@ -245,7 +245,7 @@ export function renderExportCanvas(
   const codeFontSize = swatchH * 0.8
   const countFontSize = swatchH * 0.6
   const legendItemH = swatchH
-  const rowGap = swatchH * 0.1
+  const rowGap = swatchH * 0.15
   const legendH = legendRows * legendItemH + (legendRows - 1) * rowGap + 30
 
   const canvasH = originY + gridH + legendH + PADDING
