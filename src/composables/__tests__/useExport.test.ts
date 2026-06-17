@@ -194,7 +194,7 @@ describe('renderExportCanvas total count', () => {
     // Collect fillText calls by mocking getContext on canvas prototype
     const texts: string[] = []
     const origGetContext = HTMLCanvasElement.prototype.getContext
-    HTMLCanvasElement.prototype.getContext = function () {
+    HTMLCanvasElement.prototype.getContext = function (this: HTMLCanvasElement, ...[_contextId, _options]: any[]): any {
       const mockCtx = createMockCtx()
       mockCtx.scale = () => {}
       const origFillText = mockCtx.fillText
