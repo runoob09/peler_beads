@@ -243,6 +243,7 @@ export function renderExportCanvas(
   const swatchW = itemW * 0.4
   const swatchH = swatchW * 0.618
   const codeFontSize = swatchH * 0.8
+  const countFontSize = swatchH * 0.6
   const legendItemH = swatchH
   const rowGap = swatchH * 0.1
   const legendH = legendRows * legendItemH + (legendRows - 1) * rowGap + 30
@@ -393,7 +394,7 @@ export function renderExportCanvas(
     ctx.fillText(code, lx + swatchW / 2, ly + swatchH / 2)
 
     // Count — 30% item width, at 70% position (after swatch 40% + gap 30%)
-    ctx.font = `${cellSize * 0.6}px sans-serif`
+    ctx.font = `${countFontSize}px sans-serif`
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
@@ -403,7 +404,7 @@ export function renderExportCanvas(
   // --- Total bead count ---
   const totalBeads = [...counts.values()].reduce((sum, c) => sum + c, 0)
   const totalY = legendStartY + legendRows * legendItemH + (legendRows - 1) * rowGap + 4
-  ctx.font = `bold ${cellSize * 0.6}px sans-serif`
+  ctx.font = `bold ${countFontSize}px sans-serif`
   ctx.fillStyle = '#333333'
   ctx.textAlign = 'left'
   ctx.fillText(`总计：${totalBeads} 颗`, originX, totalY)
