@@ -55,11 +55,11 @@ export async function generatePdf(
   y -= imgH + 20
 
   // Color legend — max 8 per row, swatch 40% / gap 15% / name 45%
-  const legendFontSize = cellSize * 0.8
   const colorsPerRow = Math.min(grid.palette.length, 8)
   const itemW = (595 - margin * 2) / colorsPerRow
   const legendSwatchW = itemW * 0.4
   const legendSwatchH = legendSwatchW * 0.618
+  const legendFontSize = legendSwatchH * 0.8
 
   page.drawText('色彩清单', { x: margin, y, size: legendFontSize, font: boldFont })
   y -= legendFontSize + 6
@@ -96,7 +96,7 @@ export async function generatePdf(
 
   y -= 4
   page.drawText(`总计：${totalBeads} 颗`, {
-    x: margin, y, size: cellSize * 0.6, font: boldFont,
+    x: margin, y, size: legendSwatchH * 0.6, font: boldFont,
   })
 
   const pdfBytes = new Uint8Array(await doc.save())

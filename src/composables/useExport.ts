@@ -363,8 +363,7 @@ export function renderExportCanvas(
   // --- Legend ---
   const legendY = originY + gridH + 10
   ctx.fillStyle = '#333333'
-  const legendTitleFontSize = cellSize * 0.8
-  ctx.font = `bold ${legendTitleFontSize}px sans-serif`
+  ctx.font = `bold ${swatchH * 0.8}px sans-serif`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
   ctx.fillText('色彩清单', originX, legendY)
