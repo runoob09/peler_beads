@@ -246,7 +246,9 @@ export function renderExportCanvas(
   const countFontSize = swatchH * 0.6
   const legendItemH = swatchH
   const rowGap = swatchH * 0.15
-  const legendH = legendRows * (legendItemH + rowGap) + 30
+  const TITLE_GAP = 20
+  const TOTAL_GAP = 20
+  const legendH = TITLE_GAP + legendRows * legendItemH + (legendRows - 1) * rowGap + TOTAL_GAP + countFontSize + 10
 
   const canvasH = originY + gridH + legendH + PADDING
 
@@ -368,7 +370,7 @@ export function renderExportCanvas(
   ctx.textBaseline = 'top'
   ctx.fillText('色彩清单', originX, legendY)
 
-  const legendStartY = legendY + cellSize * 1.2
+  const legendStartY = legendY + TITLE_GAP
 
   for (let i = 0; i < sortedColors.length; i++) {
     const lCol = i % legendCols
@@ -402,7 +404,7 @@ export function renderExportCanvas(
 
   // --- Total bead count ---
   const totalBeads = [...counts.values()].reduce((sum, c) => sum + c, 0)
-  const totalY = legendStartY + legendRows * (legendItemH + rowGap)
+  const totalY = legendStartY + legendRows * legendItemH + (legendRows - 1) * rowGap + TOTAL_GAP
   ctx.font = `bold ${countFontSize}px sans-serif`
   ctx.fillStyle = '#333333'
   ctx.textAlign = 'left'

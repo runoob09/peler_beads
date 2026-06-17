@@ -62,7 +62,7 @@ export async function generatePdf(
   const legendFontSize = legendSwatchH * 0.8
 
   page.drawText('色彩清单', { x: margin, y, size: legendFontSize, font: boldFont })
-  y -= legendFontSize + 6
+  y -= 20
 
   for (let i = 0; i < grid.palette.length; i += colorsPerRow) {
     const row = grid.palette.slice(i, i + colorsPerRow)
@@ -94,7 +94,7 @@ export async function generatePdf(
   let totalBeads = 0
   for (const c of colorCounts.values()) totalBeads += c
 
-  y -= 4
+  y -= 20
   page.drawText(`总计：${totalBeads} 颗`, {
     x: margin, y, size: legendSwatchH * 0.6, font: boldFont,
   })
