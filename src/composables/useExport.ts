@@ -246,7 +246,7 @@ export function renderExportCanvas(
   const countFontSize = swatchH * 0.6
   const legendItemH = swatchH
   const rowGap = swatchH * 0.15
-  const legendH = legendRows * legendItemH + (legendRows - 1) * rowGap + 30
+  const legendH = legendRows * (legendItemH + rowGap) + 30
 
   const canvasH = originY + gridH + legendH + PADDING
 
@@ -403,7 +403,7 @@ export function renderExportCanvas(
 
   // --- Total bead count ---
   const totalBeads = [...counts.values()].reduce((sum, c) => sum + c, 0)
-  const totalY = legendStartY + legendRows * legendItemH + (legendRows - 1) * rowGap + 4
+  const totalY = legendStartY + legendRows * (legendItemH + rowGap)
   ctx.font = `bold ${countFontSize}px sans-serif`
   ctx.fillStyle = '#333333'
   ctx.textAlign = 'left'
