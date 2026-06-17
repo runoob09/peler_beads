@@ -26,8 +26,6 @@ const isPainting = ref(false)
 // ---- Right-click context menu for color replace ----
 const contextMenu = ref<{ show: boolean; x: number; y: number; row: number; col: number } | null>(null)
 
-const zoomPercent = computed(() => Math.round(zoom.value * 100))
-
 const cursorStyle = computed(() => {
   return brushStore.brushMode ? 'crosshair' : 'default'
 })
@@ -449,8 +447,6 @@ watch(
               </div>
             </Teleport>
           </div>
-          <div class="zoom-indicator">{{ zoomPercent }}%</div>
-          <div class="grid-info">{{ beadStore.beadGrid.rows }} × {{ beadStore.beadGrid.cols }} · {{ beadStore.beadGrid.palette.length }} 色</div>
         </div>
       </div>
     </template>
@@ -479,8 +475,6 @@ watch(
   image-rendering: crisp-edges;
 }
 .tooltip { position: absolute; background: rgba(0,0,0,0.8); color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; pointer-events: none; transform: translate(8px, -50%); z-index: 10; }
-.zoom-indicator { margin-top: 8px; font-size: 12px; color: var(--accent, #aa3bff); font-family: var(--mono, monospace); }
-.grid-info { margin-top: 4px; font-size: 12px; color: var(--text); font-family: var(--mono, monospace); }
 .empty-state { color: var(--text); font-size: 16px; }
 
 .progress-overlay {

@@ -51,11 +51,6 @@ describe('BeadPreview', () => {
     expect(wrapper.find('.grid-info').exists()).toBe(false)
   })
 
-  it('shows grid dimension info', () => {
-    const wrapper = mountWithGrid()
-    expect(wrapper.text()).toContain('2 × 2')
-  })
-
   it('shows tooltip on mousemove inside canvas', async () => {
     const wrapper = mountWithGrid()
     await nextTick()
@@ -94,10 +89,10 @@ describe('BeadPreview', () => {
   })
 
   describe('zoom', () => {
-    it('shows zoom indicator at 100% by default', () => {
+    it('has default transform scale (no zoom)', () => {
       const wrapper = mountWithGrid()
-      expect(wrapper.find('.zoom-indicator').exists()).toBe(true)
-      expect(wrapper.find('.zoom-indicator').text()).toContain('100%')
+      const wrap = wrapper.find('.preview-canvas-wrap')
+      expect(wrap.attributes('style')).toContain('scale(1)')
     })
 
     it('increases zoom on ctrl+wheel up', async () => {
@@ -105,7 +100,8 @@ describe('BeadPreview', () => {
       await nextTick()
       const canvas = wrapper.find('canvas')
       await canvas.trigger('wheel', { deltaY: -100, ctrlKey: true })
-      expect(wrapper.find('.zoom-indicator').text()).not.toBe('100%')
+      const style = wrapper.find('.preview-canvas-wrap').attributes('style')
+      expect(style).not.toContain('scale(1)')
     })
 
     it('decreases zoom on ctrl+wheel down', async () => {
@@ -113,10 +109,10 @@ describe('BeadPreview', () => {
       await nextTick()
       const canvas = wrapper.find('canvas')
       await canvas.trigger('wheel', { deltaY: 100, ctrlKey: true })
-      const text = wrapper.find('.zoom-indicator').text()
-      // zoom should be less than 100
-      const pct = parseInt(text)
-      expect(pct).toBeLessThan(100)
+      const style = wrapper.find('.preview-canvas-wrap').attributes('style')
+      const scaleMatch = style?.match(/scale\(([\d.]+)\)/)
+      expect(scaleMatch).not.toBeNull()
+      expect(parseFloat(scaleMatch![1])).toBeLessThan(1)
     })
 
     it('clamps zoom to minimum 25%', async () => {
@@ -126,8 +122,10 @@ describe('BeadPreview', () => {
       for (let i = 0; i < 50; i++) {
         await canvas.trigger('wheel', { deltaY: 100, ctrlKey: true })
       }
-      const pct = parseInt(wrapper.find('.zoom-indicator').text())
-      expect(pct).toBeGreaterThanOrEqual(25)
+      const style = wrapper.find('.preview-canvas-wrap').attributes('style')
+      const scaleMatch = style?.match(/scale\(([\d.]+)\)/)
+      expect(scaleMatch).not.toBeNull()
+      expect(parseFloat(scaleMatch![1]) * 100).toBeGreaterThanOrEqual(25)
     })
 
     it('clamps zoom to maximum 400%', async () => {
@@ -137,8 +135,10 @@ describe('BeadPreview', () => {
       for (let i = 0; i < 50; i++) {
         await canvas.trigger('wheel', { deltaY: -100, ctrlKey: true })
       }
-      const pct = parseInt(wrapper.find('.zoom-indicator').text())
-      expect(pct).toBeLessThanOrEqual(400)
+      const style = wrapper.find('.preview-canvas-wrap').attributes('style')
+      const scaleMatch = style?.match(/scale\(([\d.]+)\)/)
+      expect(scaleMatch).not.toBeNull()
+      expect(parseFloat(scaleMatch![1]) * 100).toBeLessThanOrEqual(400)
     })
 
     it('does not zoom on wheel without ctrl', async () => {
@@ -146,7 +146,7 @@ describe('BeadPreview', () => {
       await nextTick()
       const canvas = wrapper.find('canvas')
       await canvas.trigger('wheel', { deltaY: -100, ctrlKey: false })
-      expect(wrapper.find('.zoom-indicator').text()).toBe('100%')
+      expect(wrapper.find('.preview-canvas-wrap').attributes('style')).toContain('scale(1)')
     })
   })
 
