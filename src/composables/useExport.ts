@@ -393,12 +393,12 @@ export function renderExportCanvas(
     ctx.fillStyle = getTextColor(item.color.hex)
     ctx.fillText(code, lx + swatchW / 2, ly + swatchH / 2)
 
-    // Count — 30% item width, at 70% position (after swatch 40% + gap 30%)
+    // Count — remaining area, at 55% position (after swatch 40% + gap 15%)
     ctx.font = `${countFontSize}px sans-serif`
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`${item.count}`, lx + itemW * 0.7, ly + swatchH / 2)
+    ctx.fillText(`${item.count}`, lx + itemW * 0.55, ly + swatchH / 2)
   }
 
   // --- Total bead count ---

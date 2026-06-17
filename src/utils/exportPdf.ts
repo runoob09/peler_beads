@@ -54,7 +54,7 @@ export async function generatePdf(
   page.drawImage(pngImage, { x: margin, y: y - imgH, width: imgW, height: imgH })
   y -= imgH + 20
 
-  // Color legend — max 8 per row, swatch 40% / gap 30% / name 30%
+  // Color legend — max 8 per row, swatch 40% / gap 15% / name 45%
   const legendFontSize = cellSize * 0.8
   const colorsPerRow = Math.min(grid.palette.length, 8)
   const itemW = (595 - margin * 2) / colorsPerRow
@@ -73,7 +73,7 @@ export async function generatePdf(
       const g = parseInt(hex.slice(2, 4), 16) / 255
       const b = parseInt(hex.slice(4, 6), 16) / 255
       page.drawRectangle({ x, y: y - legendSwatchH, width: legendSwatchW, height: legendSwatchH, color: rgb(r, g, b) })
-      page.drawText(`${row[j].name || row[j].hex}`, { x: x + itemW * 0.7, y: y - legendSwatchH + 2, size: legendFontSize, font })
+      page.drawText(`${row[j].name || row[j].hex}`, { x: x + itemW * 0.55, y: y - legendSwatchH + 2, size: legendFontSize, font })
     }
     y -= legendSwatchH * 1.15
     if (y < margin) {
