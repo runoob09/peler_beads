@@ -463,7 +463,7 @@ watch(
   min-height: 400px; background: var(--bg); position: relative; overflow: hidden;
 }
 .preview-body {
-  display: flex; align-items: flex-start; justify-content: center; gap: 0;
+  display: flex; align-items: stretch; justify-content: center; gap: 0;
   width: 100%; height: 100%;
 }
 .preview-body.has-palette {
