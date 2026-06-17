@@ -403,6 +403,15 @@ export function renderExportCanvas(
   ctx.textAlign = 'left'
   ctx.fillText(`总计：${totalBeads} 颗`, originX, totalY)
 
+  // --- Watermark ---
+  const watermarkText = 'github.com/runoob09/peler_beads'
+  const watermarkFontSize = countFontSize * 0.7
+  ctx.font = `${watermarkFontSize}px sans-serif`
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.15)'
+  ctx.textAlign = 'right'
+  ctx.textBaseline = 'bottom'
+  ctx.fillText(watermarkText, canvasW - PADDING, canvasH - PADDING)
+
   return canvas
 }
 

@@ -96,6 +96,20 @@ export async function generatePdf(
     x: margin, y, size: legendSwatchH * 0.6, font: boldFont,
   })
 
+  // Watermark on every page
+  const watermarkText = 'github.com/runoob09/peler_beads'
+  const watermarkSize = 8
+  const pages = doc.getPages()
+  for (const p of pages) {
+    p.drawText(watermarkText, {
+      x: margin,
+      y: margin,
+      size: watermarkSize,
+      font,
+      color: rgb(0.75, 0.75, 0.75),
+    })
+  }
+
   const pdfBytes = new Uint8Array(await doc.save())
 
   if (projectJson) {
