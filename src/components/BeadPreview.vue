@@ -454,7 +454,6 @@ watch(
         </div>
       </div>
     </template>
-    <div v-if="!beadStore.beadGrid && beadStore.progress === 0" class="empty-state"><p>上传图片开始</p></div>
   </div>
 </template>
 

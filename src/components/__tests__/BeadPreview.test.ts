@@ -43,11 +43,12 @@ describe('BeadPreview', () => {
     expect(wrapper.find('canvas').exists()).toBe(true)
   })
 
-  it('shows empty state when no grid', () => {
+  it('renders nothing when no grid', () => {
     const pinia = createPinia()
     setActivePinia(pinia)
     const wrapper = mount(BeadPreview, { global: { plugins: [pinia] } })
-    expect(wrapper.text()).toContain('上传图片开始')
+    expect(wrapper.find('canvas').exists()).toBe(false)
+    expect(wrapper.find('.grid-info').exists()).toBe(false)
   })
 
   it('shows grid dimension info', () => {
