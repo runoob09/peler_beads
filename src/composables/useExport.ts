@@ -237,9 +237,13 @@ export function renderExportCanvas(
     .sort((a, b) => b[1] - a[1])
     .map(([idx, count]) => ({ paletteIndex: idx, color: grid.palette[idx], count }))
 
-  const legendItemH = cellSize * 0.618
-  const legendCols = Math.min(8, Math.max(1, Math.floor(gridW / (cellSize * 3))))
+  const legendCols = Math.min(sortedColors.length, 8)
   const legendRows = Math.ceil(sortedColors.length / legendCols)
+  const itemW = (canvasW - originX - PADDING) / legendCols
+  const swatchW = itemW * 0.4
+  const swatchH = swatchW * 0.618
+  const codeFontSize = swatchH * 0.8
+  const legendItemH = swatchH
   const legendH = legendRows * (legendItemH + 2) + 30
 
   const canvasH = originY + gridH + legendH + PADDING
@@ -364,18 +368,15 @@ export function renderExportCanvas(
   ctx.fillText('色彩清单', originX, legendY)
 
   const legendStartY = legendY + cellSize * 1.2
-  const colWidth = Math.floor((canvasW - originX - PADDING) / legendCols)
 
   for (let i = 0; i < sortedColors.length; i++) {
     const lCol = i % legendCols
     const lRow = Math.floor(i / legendCols)
     const item = sortedColors[i]
-    const lx = originX + lCol * colWidth
+    const lx = originX + lCol * itemW
     const ly = legendStartY + lRow * (legendItemH + 2)
 
-    // Color swatch — width=cellSize, height=width*0.618
-    const swatchW = cellSize
-    const swatchH = cellSize * 0.618
+    // Color swatch — 40% item width, height = width * 0.618
     ctx.fillStyle = item.color.hex
     ctx.fillRect(lx, ly, swatchW, swatchH)
     ctx.strokeStyle = '#999999'
@@ -384,18 +385,18 @@ export function renderExportCanvas(
 
     // Color code inside swatch — centered, 80% of swatch height
     const code = getColorLabel(item.color)
-    ctx.font = `bold ${swatchH * 0.8}px monospace`
+    ctx.font = `bold ${codeFontSize}px monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillStyle = getTextColor(item.color.hex)
     ctx.fillText(code, lx + swatchW / 2, ly + swatchH / 2)
 
-    // Count to the right of swatch
+    // Count — 30% item width, at 70% position (after swatch 40% + gap 30%)
     ctx.font = `${cellSize * 0.6}px sans-serif`
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
-    ctx.fillText(`${item.count}`, lx + swatchW + 4, ly + swatchH / 2)
+    ctx.fillText(`${item.count}`, lx + itemW * 0.7, ly + swatchH / 2)
   }
 
   // --- Total bead count ---

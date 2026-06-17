@@ -54,26 +54,26 @@ export async function generatePdf(
   page.drawImage(pngImage, { x: margin, y: y - imgH, width: imgW, height: imgH })
   y -= imgH + 20
 
-  // Color legend
+  // Color legend — max 8 per row, swatch 40% / gap 30% / name 30%
   const legendFontSize = cellSize * 0.8
-  const legendSwatchW = cellSize
-  const legendSwatchH = cellSize * 0.618
+  const colorsPerRow = Math.min(grid.palette.length, 8)
+  const itemW = (595 - margin * 2) / colorsPerRow
+  const legendSwatchW = itemW * 0.4
+  const legendSwatchH = legendSwatchW * 0.618
 
   page.drawText('色彩清单', { x: margin, y, size: legendFontSize, font: boldFont })
   y -= legendFontSize + 6
 
-  const colorsPerRow = 8
-  const tagColWidth = (595 - margin * 2) / colorsPerRow
   for (let i = 0; i < grid.palette.length; i += colorsPerRow) {
     const row = grid.palette.slice(i, i + colorsPerRow)
     for (let j = 0; j < row.length; j++) {
-      const x = margin + j * tagColWidth
+      const x = margin + j * itemW
       const hex = row[j].hex.replace('#', '')
       const r = parseInt(hex.slice(0, 2), 16) / 255
       const g = parseInt(hex.slice(2, 4), 16) / 255
       const b = parseInt(hex.slice(4, 6), 16) / 255
       page.drawRectangle({ x, y: y - legendSwatchH, width: legendSwatchW, height: legendSwatchH, color: rgb(r, g, b) })
-      page.drawText(`${row[j].name || row[j].hex}`, { x: x + legendSwatchW + 4, y: y - legendSwatchH + 2, size: legendFontSize, font })
+      page.drawText(`${row[j].name || row[j].hex}`, { x: x + itemW * 0.7, y: y - legendSwatchH + 2, size: legendFontSize, font })
     }
     y -= Math.max(10, legendSwatchH + 4)
     if (y < margin) {
