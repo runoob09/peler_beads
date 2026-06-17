@@ -56,9 +56,10 @@ export async function generatePdf(
 
   // Color legend
   const legendFontSize = cellSize * 0.8
-  const legendSwatchSize = cellSize * 0.7
+  const legendSwatchW = cellSize
+  const legendSwatchH = cellSize * 0.618
 
-  page.drawText('颜色对照表', { x: margin, y, size: legendFontSize, font: boldFont })
+  page.drawText('色彩清单', { x: margin, y, size: legendFontSize, font: boldFont })
   y -= legendFontSize + 6
 
   const colorsPerRow = 8
@@ -71,10 +72,10 @@ export async function generatePdf(
       const r = parseInt(hex.slice(0, 2), 16) / 255
       const g = parseInt(hex.slice(2, 4), 16) / 255
       const b = parseInt(hex.slice(4, 6), 16) / 255
-      page.drawRectangle({ x, y: y - legendSwatchSize, width: legendSwatchSize, height: legendSwatchSize, color: rgb(r, g, b) })
-      page.drawText(`${row[j].name || row[j].hex}`, { x: x + legendSwatchSize + 4, y: y - legendSwatchSize + 2, size: legendFontSize, font })
+      page.drawRectangle({ x, y: y - legendSwatchH, width: legendSwatchW, height: legendSwatchH, color: rgb(r, g, b) })
+      page.drawText(`${row[j].name || row[j].hex}`, { x: x + legendSwatchW + 4, y: y - legendSwatchH + 2, size: legendFontSize, font })
     }
-    y -= Math.max(10, legendSwatchSize + 4)
+    y -= Math.max(10, legendSwatchH + 4)
     if (y < margin) {
       page = doc.addPage([595, 842])
       y = 842 - margin
@@ -95,7 +96,7 @@ export async function generatePdf(
 
   y -= 4
   page.drawText(`总计：${totalBeads} 颗`, {
-    x: margin, y, size: legendFontSize, font: boldFont,
+    x: margin, y, size: cellSize * 0.6, font: boldFont,
   })
 
   const pdfBytes = new Uint8Array(await doc.save())

@@ -237,8 +237,8 @@ export function renderExportCanvas(
     .sort((a, b) => b[1] - a[1])
     .map(([idx, count]) => ({ paletteIndex: idx, color: grid.palette[idx], count }))
 
-  const legendItemH = Math.max(10, cellSize * 0.8)
-  const legendCols = Math.min(8, Math.max(1, Math.floor(gridW / (cellSize * 5))))
+  const legendItemH = cellSize * 0.618
+  const legendCols = Math.min(8, Math.max(1, Math.floor(gridW / (cellSize * 3))))
   const legendRows = Math.ceil(sortedColors.length / legendCols)
   const legendH = legendRows * (legendItemH + 2) + 30
 
@@ -257,7 +257,7 @@ export function renderExportCanvas(
 
   // --- Column headers ---
   const headerLarge = cellSize * 0.8
-  const headerSmall = headerLarge * 0.6
+  const headerSmall = cellSize * 0.6
   ctx.fillStyle = '#333333'
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
@@ -269,15 +269,15 @@ export function renderExportCanvas(
     ctx.fillText(String(num), x, PADDING + MARGIN / 2)
   }
 
-  // --- Row headers ---
-  ctx.textAlign = 'center'
+  // --- Row headers (right-aligned, right edge 10px from grid) ---
+  ctx.textAlign = 'right'
   ctx.textBaseline = 'middle'
   for (let row = 0; row < grid.rows; row++) {
     const num = row + 1
     const large = num % 10 === 0
     ctx.font = `bold ${large ? headerLarge : headerSmall}px monospace`
     const y = originY + row * cellSize + cellSize / 2
-    ctx.fillText(String(num), originX - MARGIN / 2, y)
+    ctx.fillText(String(num), originX - 10, y)
   }
 
   // --- Header border lines ---
@@ -361,7 +361,7 @@ export function renderExportCanvas(
   ctx.font = `bold ${legendTitleFontSize}px sans-serif`
   ctx.textAlign = 'left'
   ctx.textBaseline = 'top'
-  ctx.fillText('颜色图例（按数量降序）', originX, legendY)
+  ctx.fillText('色彩清单', originX, legendY)
 
   const legendStartY = legendY + cellSize * 1.2
   const colWidth = Math.floor((canvasW - originX - PADDING) / legendCols)
@@ -373,9 +373,9 @@ export function renderExportCanvas(
     const lx = originX + lCol * colWidth
     const ly = legendStartY + lRow * (legendItemH + 2)
 
-    // Color swatch — 40% column width, 90% row height
-    const swatchW = colWidth * 0.4
-    const swatchH = legendItemH * 0.9
+    // Color swatch — width=cellSize, height=width*0.618
+    const swatchW = cellSize
+    const swatchH = cellSize * 0.618
     ctx.fillStyle = item.color.hex
     ctx.fillRect(lx, ly, swatchW, swatchH)
     ctx.strokeStyle = '#999999'
@@ -391,7 +391,7 @@ export function renderExportCanvas(
     ctx.fillText(code, lx + swatchW / 2, ly + swatchH / 2)
 
     // Count to the right of swatch
-    ctx.font = `${cellSize * 0.8}px sans-serif`
+    ctx.font = `${cellSize * 0.6}px sans-serif`
     ctx.fillStyle = '#333333'
     ctx.textAlign = 'left'
     ctx.textBaseline = 'middle'
@@ -401,7 +401,7 @@ export function renderExportCanvas(
   // --- Total bead count ---
   const totalBeads = [...counts.values()].reduce((sum, c) => sum + c, 0)
   const totalY = legendStartY + legendRows * (legendItemH + 2) + 4
-  ctx.font = `bold ${cellSize * 0.8}px sans-serif`
+  ctx.font = `bold ${cellSize * 0.6}px sans-serif`
   ctx.fillStyle = '#333333'
   ctx.textAlign = 'left'
   ctx.fillText(`总计：${totalBeads} 颗`, originX, totalY)
