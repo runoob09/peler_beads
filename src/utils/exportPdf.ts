@@ -75,7 +75,7 @@ export async function generatePdf(
       page.drawRectangle({ x, y: y - legendSwatchH, width: legendSwatchW, height: legendSwatchH, color: rgb(r, g, b) })
       page.drawText(`${row[j].name || row[j].hex}`, { x: x + itemW * 0.7, y: y - legendSwatchH + 2, size: legendFontSize, font })
     }
-    y -= Math.max(10, legendSwatchH + 4)
+    y -= legendSwatchH * 1.1
     if (y < margin) {
       page = doc.addPage([595, 842])
       y = 842 - margin
