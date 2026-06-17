@@ -246,9 +246,8 @@ export function renderExportCanvas(
   const countFontSize = swatchH * 0.6
   const legendItemH = swatchH
   const rowGap = swatchH * 0.15
-  const TITLE_GAP = 20
   const TOTAL_GAP = 20
-  const legendH = TITLE_GAP + legendRows * legendItemH + (legendRows - 1) * rowGap + TOTAL_GAP + countFontSize + 10
+  const legendH = legendRows * legendItemH + (legendRows - 1) * rowGap + TOTAL_GAP + countFontSize + 10
 
   const canvasH = originY + gridH + legendH + PADDING
 
@@ -364,13 +363,7 @@ export function renderExportCanvas(
 
   // --- Legend ---
   const legendY = originY + gridH + 10
-  ctx.fillStyle = '#333333'
-  ctx.font = `bold ${swatchH * 0.8}px sans-serif`
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'top'
-  ctx.fillText('色彩清单', originX, legendY)
-
-  const legendStartY = legendY + TITLE_GAP
+  const legendStartY = legendY
 
   for (let i = 0; i < sortedColors.length; i++) {
     const lCol = i % legendCols

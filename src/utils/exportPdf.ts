@@ -61,9 +61,6 @@ export async function generatePdf(
   const legendSwatchH = legendSwatchW * 0.618
   const legendFontSize = legendSwatchH * 0.8
 
-  page.drawText('色彩清单', { x: margin, y, size: legendFontSize, font: boldFont })
-  y -= 20
-
   for (let i = 0; i < grid.palette.length; i += colorsPerRow) {
     const row = grid.palette.slice(i, i + colorsPerRow)
     for (let j = 0; j < row.length; j++) {
