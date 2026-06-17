@@ -200,7 +200,7 @@ async function onImportFromDrawing() {
         <p v-if="creationMode === 'image'">上传图片开始</p>
         <p v-else>点击「创建画布」开始自由创作</p>
       </div>
-      <BeadPreview />
+      <BeadPreview v-if="beadStore.beadGrid || beadStore.progress > 0" />
     </div>
     <ColorLegend />
     <ImageEditorModal
